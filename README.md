@@ -8,7 +8,6 @@ https://Master.Kalisz.co
 The paper will be written in LaTeX and added soon.
 
 # Code
-##
 
 Any code is being written in HTML5, Python and C++.
 
