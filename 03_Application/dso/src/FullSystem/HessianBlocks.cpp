@@ -223,4 +223,3 @@ void FrameFramePrecalc::set(FrameHessian* host, FrameHessian* target, CalibHessi
 }
 
 }
-

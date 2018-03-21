@@ -92,7 +92,11 @@ void exitThread()
 }
 
 
-
+/*
+ Depending on the "preset" argument passed to the main function
+ (=> real-time or no real-time?)
+ We set the appropriate variables in the util/settings.h file
+ */
 void settingsDefault(int preset)
 {
 	printf("\n=============== PRESET Settings: ===============\n");
@@ -147,8 +151,9 @@ void settingsDefault(int preset)
 
 
 
-
-
+/*
+ Parse the whole argument string for any relevant arguments:
+ */
 void parseArgument(char* arg)
 {
 	int option;
@@ -353,46 +358,74 @@ void parseArgument(char* arg)
 
 int main( int argc, char** argv )
 {
-	//setlocale(LC_ALL, "");
-	for(int i=1; i<argc;i++)
-		parseArgument(argv[i]);
+    //setlocale(LC_ALL, "");
+    // This will go through every passed argument
+    // e.g. quiet=True, preset=2 ( no real-time (800 pts etc.) ), mode=1 ( NO photometric calibration )
+    // and parses it to set their respective global variables
+    // compare here: https://github.com/JakobEngel/dso
+    sampleoutput=1 \
+    quiet=1 \
+    save=1
+    for(int i=1; i<argc;i++)
+            parseArgument(argv[i]);
 
-	// hook crtl+C.
-	boost::thread exThread = boost::thread(exitThread);
+    // hook the "exitThread()" function at the beginning of this file to crtl+C.
+    boost::thread exThread = boost::thread(exitThread);
+
+    // Create a reader object for an image folder based on the parsed arguments
+    // That is: Pass the geometric and photometric calibration file
+    // as well as the vignette image
+    ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
+    reader->setGlobalCalibration();
 
 
-	ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
-	reader->setGlobalCalibration();
-
-
-
-	if(setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
-	{
-		printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
-		exit(1);
-	}
-
-
-
-
-	int lstart=start;
-	int lend = end;
-	int linc = 1;
-	if(reverse)
-	{
-		printf("REVERSE!!!!");
-		lstart=end-1;
-		if(lstart >= reader->getNumImages())
-			lstart = reader->getNumImages()-1;
-		lend = start;
-		linc = -1;
-	}
+    // If we are using a mode that needs a photometric calibration
+    // (mode=0) then the default setting from util/settings.cpp is used
+    // (setting_photometricCalibration = 2), therefore the reader should have
+    // gotten proper information. If this is not the case, then exit the program
+    if(setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
+    {
+            printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
+            exit(1);
+    }
 
 
 
-	FullSystem* fullSystem = new FullSystem();
-	fullSystem->setGammaFunction(reader->getPhotometricGamma());
-	fullSystem->linearizeOperation = (playbackSpeed==0);
+    // Prepare variables for storing start and end information
+    int lstart=start;
+    int lend = end;
+    int linc = 1;
+    // If the image sequence should get reversed, swap start and end
+    if(reverse)
+    {
+            printf("REVERSE!!!!");
+            lstart=end-1;
+            if(lstart >= reader->getNumImages())
+                    lstart = reader->getNumImages()-1;
+            lend = start;
+            linc = -1;
+    }
+
+    // This is the heart of the algorithm. Almost everything is contained in
+    // the "FullSystem". Create it:
+    FullSystem* fullSystem = new FullSystem();
+    // The gamma function is set per complete image sequence set.
+    // The photometric gamma is determined based on the file "pcalib.txt",
+    // which contains 256 values ranging from 0.0 to 255.0.
+    // If a camera does an automatic exposure, pixels will have different
+    // brightness values. I believe, that the difference in brightness between
+    // two exposure times is what is stored in the text file. By inverting the 
+    // irradiance (component "B" in the function) we can determine the camera
+    // response function "G", if we know the exposure times "t" (those are 
+    // contained in the file "times.txt": Frame Number, Timestamp, Milliseconds)
+    // 
+    // 
+    // More details are given in the paper (page 3, eq. 4):
+    // https://vision.in.tum.de/_media/spezial/bib/engel2016monodataset.pdf
+
+    fullSystem->setGammaFunction(reader->getPhotometricGamma());
+    // if playback speed is the default value, set linearizeOperation to true
+    fullSystem->linearizeOperation = (playbackSpeed==0);
 
 
 
@@ -510,7 +543,6 @@ int main( int argc, char** argv )
                     fullSystem = new FullSystem();
                     fullSystem->setGammaFunction(reader->getPhotometricGamma());
                     fullSystem->linearizeOperation = (playbackSpeed==0);
-
 
                     fullSystem->outputWrapper = wraps;
 
