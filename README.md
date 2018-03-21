@@ -8,7 +8,13 @@ https://Master.Kalisz.co
 The paper will be written in LaTeX and added soon.
 
 # Code
-The code will be written in TODO.
+##
+
+Any code is being written in HTML5, Python and C++.
 
 ## Dependencies
-TODO
+### Direct Sparse Odometry (DSO)
+This work uses the Direct Sparse Odometry Project by TUM (see: https://vision.in.tum.de/dso and https://github.com/JakobEngel/dso). License: GPL-v3.
+
+### Direct Sparse Odometry for ROS (ros-dso)
+There is also a ros-wrapper for DSO, which is used for the real-time part of this work (see https://github.com/JakobEngel/dso_ros). The "catkin" branch by Nikolaus Demmel was actually used here, as the original "rosmake" version did not work for me. License: GPL-v3.
