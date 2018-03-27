@@ -240,7 +240,10 @@ void FullSystem::setGammaFunction(float* BInv)
 	Hcalib.B[255] = 255;
 }
 
-
+void FullSystem::setCameraPoses(std::vector<SE3> poses)
+{
+    this->cameraPoses = poses;
+}
 
 void FullSystem::printResult(std::string file)
 {
@@ -270,9 +273,9 @@ void FullSystem::printResult(std::string file)
 
 Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 {
-
-	assert(allFrameHistory.size() > 0);
-	// set pose initialization.
+    printf("FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)\n");
+    assert(allFrameHistory.size() > 0);
+    // set pose initialization.
 
     for(IOWrap::Output3DWrapper* ow : outputWrapper)
         ow->pushLiveFrame(fh);
@@ -363,6 +366,20 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 	Vec5 achievedRes = Vec5::Constant(NAN);
 	bool haveOneGood = false;
 	int tryIterations=0;
+        
+        
+        // TODO ADAM !!!!
+        // If we have a file with available camera poses,
+        // then use them insted of randomly trying around stuff
+        /*
+        if( (int)this->cameraPoses.size() > 0)
+        {
+            lastF_2_fh_tries.clear();
+            lastF_2_fh_tries.push_back(this->cameraPoses.at(fh->shell->id));
+        }
+        */
+        
+        
 	for(unsigned int i=0;i<lastF_2_fh_tries.size();i++)
 	{
 		AffLight aff_g2l_this = aff_last_2_l;
@@ -809,7 +826,14 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	// =========================== add into allFrameHistory =========================
 	FrameHessian* fh = new FrameHessian();
 	FrameShell* shell = new FrameShell();
-	shell->camToWorld = SE3();		// no lock required, as fh is not used anywhere yet.
+        //initialize camToWorld_predicted (SE3) with external information (GroundTruth, GPS, ...)
+        SE3 initialCameraPose;
+        if( (int)this->cameraPoses.size() > 0 && (int)this->cameraPoses.size() >= id)
+        {
+            printf("\nLoading Camera pose number %d\n\n", id);
+            shell->camToWorld_predicted = this->cameraPoses.at(id);
+        }
+	shell->camToWorld = initialCameraPose;		// no lock required, as fh is not used anywhere yet.
         shell->aff_g2l = AffLight(0,0);
         shell->marginalizedAt = shell->id = allFrameHistory.size();
         shell->timestamp = image->timestamp;

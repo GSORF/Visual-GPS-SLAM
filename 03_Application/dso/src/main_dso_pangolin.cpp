@@ -55,6 +55,7 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
+std::string poses = ""; // Added for reading in available camera poses
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -350,7 +351,15 @@ void parseArgument(char* arg)
 		}
 		return;
 	}
-
+        /*
+         Add feature to read in custom data 
+         */
+	if(1==sscanf(arg,"poses=%s",buf))
+	{
+		poses = buf;
+		printf("loading additional camera poses from %s!\n", poses.c_str());
+		return;
+	}
 	printf("could not parse argument \"%s\"!!!!\n", arg);
 }
 
@@ -363,9 +372,6 @@ int main( int argc, char** argv )
     // e.g. quiet=True, preset=2 ( no real-time (800 pts etc.) ), mode=1 ( NO photometric calibration )
     // and parses it to set their respective global variables
     // compare here: https://github.com/JakobEngel/dso
-    sampleoutput=1 \
-    quiet=1 \
-    save=1
     for(int i=1; i<argc;i++)
             parseArgument(argv[i]);
 
@@ -375,7 +381,7 @@ int main( int argc, char** argv )
     // Create a reader object for an image folder based on the parsed arguments
     // That is: Pass the geometric and photometric calibration file
     // as well as the vignette image
-    ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
+    ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette, poses);
     reader->setGlobalCalibration();
 
 
@@ -427,7 +433,8 @@ int main( int argc, char** argv )
     // if playback speed is the default value, set linearizeOperation to true
     fullSystem->linearizeOperation = (playbackSpeed==0);
 
-
+    // Pass on available cameraPoses to FullSystem, if applicable:
+    fullSystem->setCameraPoses(reader->getCameraPoses());
 
 
 
@@ -448,12 +455,16 @@ int main( int argc, char** argv )
 
 
 
+    // START of main loop (runs on worker thread)
     // to make MacOS happy: run this in dedicated thread -- and use this one to run the GUI.
     std::thread runthread([&]() {
+        
         std::vector<int> idsToPlay;
         std::vector<double> timesToPlayAt;
+        // Go over all available image files
         for(int i=lstart;i>= 0 && i< reader->getNumImages() && linc*i < linc*lend;i+=linc)
         {
+            // store what IDs we want to use (it is possible to skip frames, so IDs will be different)
             idsToPlay.push_back(i);
             if(timesToPlayAt.size() == 0)
             {
@@ -467,11 +478,12 @@ int main( int argc, char** argv )
             }
         }
 
-
+        
         std::vector<ImageAndExposure*> preloadedImages;
         if(preload)
         {
             printf("LOADING ALL IMAGES!\n");
+            // Get which IDs we want to use and push them back in the image list
             for(int ii=0;ii<(int)idsToPlay.size(); ii++)
             {
                 int i = idsToPlay[ii];
@@ -484,19 +496,32 @@ int main( int argc, char** argv )
         clock_t started = clock();
         double sInitializerOffset=0;
 
-
+        //*****************************************************
+        //
+        // Here is the main procedure for tracking the images!
+        //
+        //*****************************************************
         for(int ii=0;ii<(int)idsToPlay.size(); ii++)
         {
+            //*****************************************************
+            //
+            // STEP1: Store time when the reconstruction was started
+            //
+            //*****************************************************
             if(!fullSystem->initialized)	// if not initialized: reset start time.
             {
                 gettimeofday(&tv_start, NULL);
                 started = clock();
                 sInitializerOffset = timesToPlayAt[ii];
             }
-
+            
             int i = idsToPlay[ii];
 
-
+            //*****************************************************
+            //
+            // STEP2: Load image on-the-fly or use preloaded images
+            //
+            //*****************************************************
             ImageAndExposure* img;
             if(preload)
                 img = preloadedImages[ii];
@@ -504,7 +529,11 @@ int main( int argc, char** argv )
                 img = reader->getImage(i);
 
 
-
+            //*****************************************************
+            //
+            // STEP3: Determine if the current frame needs to be skipped
+            //
+            //*****************************************************
             bool skipFrame=false;
             if(playbackSpeed!=0)
             {
@@ -521,14 +550,22 @@ int main( int argc, char** argv )
             }
 
 
-
+            //*****************************************************
+            //
+            // STEP4: Add the loaded image as an active frame into the queue
+            //
+            //*****************************************************
+            
             if(!skipFrame) fullSystem->addActiveFrame(img, i);
 
-
-
-
+            // Free memory reserved for a pointer to the image object
             delete img;
 
+            //*****************************************************
+            //
+            // STEP5: Check if Init failed or "Reset" was pressed
+            //
+            //*****************************************************
             if(fullSystem->initFailed || setting_fullResetRequested)
             {
                 if(ii < 250 || setting_fullResetRequested)
@@ -550,6 +587,11 @@ int main( int argc, char** argv )
                 }
             }
 
+            //*****************************************************
+            //
+            // STEP6: Check if Tracking was lost. if true, DSO will abort
+            //
+            //*****************************************************
             if(fullSystem->isLost)
             {
                     printf("LOST!!\n");
@@ -557,6 +599,13 @@ int main( int argc, char** argv )
             }
 
         }
+        
+        
+        //*****************************************************
+        //
+        // FINISH - Mapping completed or aborted: Now print statistics
+        //
+        //*****************************************************
         fullSystem->blockUntilMappingIsFinished();
         clock_t ended = clock();
         struct timeval tv_end;
@@ -582,6 +631,7 @@ int main( int argc, char** argv )
                 MilliSecondsTakenMT / (float)numFramesProcessed,
                 1000 / (MilliSecondsTakenSingle/numSecondsProcessed),
                 1000 / (MilliSecondsTakenMT / numSecondsProcessed));
+        
         //fullSystem->printFrameLifetimes();
         if(setting_logStuff)
         {
@@ -594,8 +644,9 @@ int main( int argc, char** argv )
         }
 
     });
+    // END of main loop (runs on worker thread)
 
-
+    // Rendering loop (runs on main (GUI) thread)
     if(viewer != 0)
         viewer->run();
 

@@ -45,6 +45,7 @@ public:
 
 	// constantly adapted.
 	SE3 camToWorld;				// Write: TRACKING, while frame is still fresh; MAPPING: only when locked [shellPoseMutex].
+	SE3 camToWorld_predicted;		// this is used for integrating other Measurements, e.g. GPS
 	AffLight aff_g2l;
 	bool poseValid;
 
@@ -60,6 +61,7 @@ public:
 		id=0;
 		poseValid=true;
 		camToWorld = SE3();
+		camToWorld_predicted = SE3();
 		timestamp=0;
 		marginalizedAt=-1;
 		movedByOpt=0;

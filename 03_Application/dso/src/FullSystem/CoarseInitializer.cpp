@@ -80,6 +80,7 @@ CoarseInitializer::~CoarseInitializer()
 
 bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
 {
+    printf("FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)\n");
 	newFrame = newFrameHessian;
 
     for(IOWrap::Output3DWrapper* ow : wraps)
@@ -251,7 +252,10 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 
 
-	thisToNext = refToNew_current;
+        thisToNext = refToNew_current;
+        
+        //TODO: Check here later!!!
+	//thisToNext = newFrame->shell->camToWorld_predicted;
 	thisToNext_aff = refToNew_aff_current;
 
 	for(int i=0;i<pyrLevelsUsed-1;i++)
@@ -766,7 +770,7 @@ void CoarseInitializer::makeGradients(Eigen::Vector3f** data)
 }
 void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHessian)
 {
-
+    printf("FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)\n");
 	makeK(HCalib);
 	firstFrame = newFrameHessian;
 
@@ -842,7 +846,15 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 
 	makeNN();
 
-	thisToNext=SE3();
+        
+        /*
+         
+         TODO Adam:
+         Check this!
+          
+         */
+	thisToNext=firstFrame->shell->camToWorld_predicted;
+	//thisToNext=SE3();
 	snapped = false;
 	frameID = snappedAt = 0;
 

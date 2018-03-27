@@ -102,10 +102,11 @@ struct PrepImageItem
 class ImageFolderReader
 {
 public:
-	ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile)
+	ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, std::string cameraPoses)
 	{
 		this->path = path;
 		this->calibfile = calibFile;
+                this->posesfile = cameraPoses; //Added class variable for camera poses
 
 #if HAS_ZIPLIB
 		ziparchive=0;
@@ -161,6 +162,7 @@ public:
 
 		// load timestamps if possible.
 		loadTimestamps();
+		loadCameraPoses();
 		printf("ImageFolderReader: got %d files in %s!\n", (int)files.size(), path.c_str());
 
 	}
@@ -235,6 +237,11 @@ public:
 		if(undistort==0 || undistort->photometricUndist==0) return 0;
 		return undistort->photometricUndist->getG();
 	}
+        
+        inline std::vector<SE3> getCameraPoses()
+        {
+            return this->cameraPoses;
+        }
 
 
 	// undistorter. [0] always exists, [1-2] only when MT is enabled.
@@ -355,6 +362,241 @@ private:
 		printf("got %d images and %d timestamps and %d exposures.!\n", (int)getNumImages(), (int)timestamps.size(), (int)exposures.size());
 	}
 
+        /*
+         Added function to read in cameraPoses:
+         */
+	inline void loadCameraPoses()
+	{
+		std::ifstream poseReader;
+		poseReader.open(this->posesfile.c_str());
+                float fps = 1.0f / 25.0f;
+                int index = 0;
+		while(!poseReader.eof() && poseReader.good())
+		{
+			std::string line;
+			char buf[1000];
+			poseReader.getline(buf, 1000);
+                        
+                        /* 
+                         A line of the poses.csv file (exported from Blender)
+                         looks like this, for instance:
+                         
+                         40,0.000000,0.001338,0.000000,0.707107,0.707107,0.000000,0.000000
+                         
+                         it contains:
+                         
+                         > timestamp (ms), 
+                         > world-position-x,
+                         > world-position-y,
+                         > world-position-z,
+                         > world-orientation-w,
+                         > world-orientation-x, 
+                         > world-orientation-y,
+                         > world-orientation-z
+                         */
+                        
+			double stamp;
+			double loc_x, loc_y, loc_z = 0;
+                        double quat_w, quat_x, quat_y, quat_z = 0;
+                        
+                        // Extract values from current read line:
+			if(8 == sscanf(buf, "%lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf", &stamp, &loc_x, &loc_y, &loc_z, &quat_w, &quat_x, &quat_y, &quat_z))
+			{
+                                // Create translation vector and quaternion from values
+                                Eigen::Vector3d translation(loc_x, loc_y, loc_z);
+                                Eigen::Quaterniond orientation(quat_w, quat_x, quat_y, quat_z);
+                                
+                                std::cout << "\nQuaternion read: (" << orientation.w() << ", " << orientation.x() << ", " << orientation.y() << ", " << orientation.z() << ")" << std::endl;
+                                std::cout << "Translation read: (" << translation.x() << ", " << translation.y() << ", " << translation.z() << ")" << std::endl;
+                                
+                                // Create 4x4 (Affine) Matrix for the current camera Pose
+                                Eigen::Affine3d blenderWorld2Camera;
+                                blenderWorld2Camera.Identity();
+                                blenderWorld2Camera.translation() = translation;
+                                blenderWorld2Camera.linear() = orientation.toRotationMatrix();
+                                
+                                // We actually need the transformation from camera to world:
+                                Eigen::Affine3d blenderCamera2World = blenderWorld2Camera.inverse();
+                                
+                                // Matrix converting from Blender space to DSO space:
+                                // x = -x
+                                // y = -z
+                                // z =  y
+                                Eigen::Matrix3d linearB2D(3,3);
+                                linearB2D << -1,  0,  0,
+                                              0,  0, -1,
+                                              0,  1,  0;
+                                Eigen::Affine3d blender2DSO;
+                                blender2DSO.setIdentity();
+                                blender2DSO.linear() = linearB2D;
+                                
+                                // Transform from Blender coordinate system (BCS) to DSO coordinate system (DCS)
+                                Eigen::Affine3d finalPose = blender2DSO * blenderCamera2World;
+                                
+                                // We are finished, we can create the SE3 representation now:
+                                // So, convert to Sophus:
+                                SE3 cameraPose(finalPose.linear(), finalPose.translation());
+                                
+                                // Push current pose onto list, so it can be retrieved for every Frame processed
+                                cameraPoses.push_back(cameraPose);
+                                
+                                
+                                
+                                
+                                // Now transform back (Test - TODO: Put in OutputWrapper)
+                                
+                                // Matrix converting from DSO space to Blender space (will be used later for visualization):
+                                // x = -x
+                                // y =  z
+                                // z = -y
+                                Eigen::Matrix3d linearD2B(3,3);
+                                linearD2B << -1,  0,  0,
+                                              0,  0,  1,
+                                              0, -1,  0;
+                                Eigen::Matrix4d dso2Blender;
+                                dso2Blender.setIdentity();
+                                dso2Blender.topLeftCorner(3,3) = linearD2B;
+                                
+                                // Test the transformation back to Blender:
+                                
+                                // Eigen::Affine3d dsoPoseWorking(finalPose);
+                                Eigen::Matrix4d dsoPose;
+                                dsoPose.setIdentity();
+                                dsoPose = cameraPose.matrix();
+                                
+                                Eigen::Matrix4d blenderCam2World = dso2Blender * dsoPose;
+                                Eigen::Matrix4d blenderWorld2Cam = blenderCam2World.inverse(); //Inverse = World to Camera
+                                
+                                std::cout << dsoPose.matrix() << std::endl;
+                                std::cout << finalPose.affine() << std::endl;
+                                
+                                
+                                Eigen::Quaterniond q;
+                                q = Eigen::Matrix3d(blenderWorld2Cam.topLeftCorner(3,3) );
+                                
+                                Eigen::Vector3d t;
+                                t = blenderWorld2Cam.topRightCorner(3,1);
+                                
+                                
+                                /*
+                                
+                                SE3 recoveredSE3(recoveredPose.linear(), recoveredPose.translation());
+                                
+                                Eigen::Affine3d back = dso2Blender * finalPose;
+                                back = back.inverse();
+                                
+                                */
+                                
+                                
+                                std::cout << "==> Recovered: quat(" << q.w() << ", " << q.x() << ", " << q.y() << ", " << q.z() << ")" << std::endl;
+                                std::cout << "==> Recovered: trans(" << t.x() << ", " << t.y() << ", " << t.z() << ")" << std::endl << std::endl;
+                                
+                                
+                                /*
+                                // Debug output
+                                std::cout << "ADDED a new camera pose quat("
+                                        << cameraPose.unit_quaternion().w() << ","
+                                        << cameraPose.unit_quaternion().x() << ","
+                                        << cameraPose.unit_quaternion().y() << ","
+                                        << cameraPose.unit_quaternion().z()
+                                        << ")\n"
+                                        << cameraPose.matrix3x4()
+                                        << "\nNumber: " << index << std::endl;                                
+                                
+                                
+                                
+                                
+                                std::cout << "Recovered pose quat("
+                                        << recoveredSE3.unit_quaternion().w() << ","
+                                        << recoveredSE3.unit_quaternion().x() << ","
+                                        << recoveredSE3.unit_quaternion().y() << ","
+                                        << recoveredSE3.unit_quaternion().z()
+                                        << ")\n"
+                                        << recoveredSE3.matrix3x4()
+                                        << "\nNumber: " << index << std::endl << std::endl; 
+                                
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                // Now transform back (Test - TODO: Put in OutputWrapper)
+                                
+                                // Matrix converting from DSO space to Blender space (will be used later for visualization):
+                                // x = -x
+                                // y =  z
+                                // z = -y
+                                Eigen::Matrix3d linearD2B(3,3);
+                                linearD2B << -1,  0,  0,
+                                              0,  0,  1,
+                                              0, -1,  0;
+                                Eigen::Affine3d dso2Blender;
+                                dso2Blender.setIdentity();
+                                dso2Blender.linear() = linearD2B;
+                                
+                                // Test the transformation back to Blender:
+                                Eigen::Affine3d dsoPose(cameraPose);
+                                Eigen::Affine3d blenderCam2World = dso2Blender * dsoPose;
+                                Eigen::Affine3d blenderWorld2Cam = blenderCam2World.inverse();
+                                
+                                Eigen::Quaterniond q(blenderWorld2Cam.linear());
+                                Eigen::Vector3d t(blenderWorld2Cam.translation());
+                                
+                                std::cout << "==> Recovered: quat(" << q.w() << ", " << q.x() << ", " << q.y() << ", " << q.z() << ")" << std::endl;
+                                std::cout << "==> Recovered: trans(" << t.x() << ", " << t.y() << ", " << t.z() << ")" << std::endl;
+                                
+                                
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                 * 
+                                */
+                                
+			}
+                        
+                        index+=1;
+
+		}
+		poseReader.close();
+
+		// check if exposures are correct, (possibly skip)
+		bool exposuresGood = ((int)exposures.size()==(int)getNumImages()) ;
+		for(int i=0;i<(int)exposures.size();i++)
+		{
+			if(exposures[i] == 0)
+			{
+				// fix!
+				float sum=0,num=0;
+				if(i>0 && exposures[i-1] > 0) {sum += exposures[i-1]; num++;}
+				if(i+1<(int)exposures.size() && exposures[i+1] > 0) {sum += exposures[i+1]; num++;}
+
+				if(num>0)
+					exposures[i] = sum/num;
+			}
+
+			if(exposures[i] == 0) exposuresGood=false;
+		}
+
+
+		if((int)getNumImages() != (int)timestamps.size())
+		{
+			printf("set timestamps and exposures to zero!\n");
+			exposures.clear();
+			timestamps.clear();
+		}
+
+		if((int)getNumImages() != (int)exposures.size() || !exposuresGood)
+		{
+			printf("set EXPOSURES to zero!\n");
+			exposures.clear();
+		}
+
+		printf("got %d images and %d timestamps and %d exposures.!\n", (int)getNumImages(), (int)timestamps.size(), (int)exposures.size());
+	}
 
 
 
@@ -362,12 +604,14 @@ private:
 	std::vector<std::string> files;
 	std::vector<double> timestamps;
 	std::vector<float> exposures;
+        std::vector<SE3> cameraPoses; // List of cameraPoses (i.e. groundTruth)
 
 	int width, height;
 	int widthOrg, heightOrg;
 
 	std::string path;
 	std::string calibfile;
+        std::string posesfile; // Path to cameraPoses.csv file
 
 	bool isZipped;
 

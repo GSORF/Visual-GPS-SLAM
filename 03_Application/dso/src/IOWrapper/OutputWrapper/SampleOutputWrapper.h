@@ -67,6 +67,7 @@ public:
 
         virtual void publishGraph(const std::map<uint64_t,Eigen::Vector2i> &connectivity)
         {
+            /*
             printf("OUT: got graph with %d edges\n", (int)connectivity.size());
 
             int maxWrite = 5;
@@ -79,12 +80,14 @@ public:
                 maxWrite--;
                 if(maxWrite==0) break;
             }
+            */
         }
 
 
 
         virtual void publishKeyframes( std::vector<FrameHessian*> &frames, bool final, CalibHessian* HCalib)
         {
+            /*
             for(FrameHessian* f : frames)
             {
                 printf("OUT: KF %d (%s) (id %d, tme %f): %d active, %d marginalized, %d immature points. CameraToWorld:\n",
@@ -105,6 +108,8 @@ public:
                     if(maxWrite==0) break;
                 }
             }
+            
+            */
         }
 
         virtual void publishCamPose(FrameShell* frame, CalibHessian* HCalib)
@@ -113,29 +118,53 @@ public:
                    frame->incoming_id,
                    frame->timestamp,
                    frame->id);
-                std::cout << frame->camToWorld.matrix3x4() << "\n";
-		std::cout << "camToTrackingRef: " << frame->camToTrackingRef.matrix3x4() << "\n";
-		// Matrix3x4 from Sophus library is of type SE3
-		// which - in turn - internally is a Matrix<Scalar,3,4>
-		// Conversion to Translation and Quaternion is below.
-                // First show timestamp (based on 25 fps) in milliseconds:
-		csvFile << frame->id * (1.0 / 25.0) * 1000.0 << ",";
-                // Translation:
-		csvFile << frame->camToWorld.inverse().translation().row(0) << ","
-                        << frame->camToWorld.inverse().translation().row(1) << ","
-                        << frame->camToWorld.inverse().translation().row(2) << ",";
-                // Quaternion:
-		csvFile << frame->camToWorld.inverse().unit_quaternion().w() << ","
-                        << frame->camToWorld.inverse().unit_quaternion().x() << ","
-                        << frame->camToWorld.inverse().unit_quaternion().y() << ","
-                        << frame->camToWorld.inverse().unit_quaternion().z()<< "\n";
-		csvFile.flush(); //Flush because Destructor is never called...
+            
+            // Matrix converting from DSO space to Blender space (will be used later for visualization):
+            // x = -x
+            // y =  z
+            // z = -y
+            Eigen::Matrix3d linearD2B(3,3);
+            linearD2B << -1,  0,  0,
+                          0,  0,  1,
+                          0, -1,  0;
+            Eigen::Affine3d dso2Blender;
+            dso2Blender.setIdentity();
+            dso2Blender.linear() = linearD2B;
+
+            // Transform the pose back to Blender:
+
+            Eigen::Affine3d dsoPose(frame->camToWorld.matrix3x4());
+            
+            Eigen::Affine3d blenderCam2World = dso2Blender * dsoPose;
+            Eigen::Affine3d blenderWorld2Cam = blenderCam2World.inverse(); //Inverse = World to Camera
+
+            Eigen::Quaterniond q(blenderWorld2Cam.linear());
+            Eigen::Vector3d t(blenderWorld2Cam.translation());
+            
+            std::cout << frame->camToWorld.matrix3x4() << "\n";
+            std::cout << "camToTrackingRef: " << frame->camToTrackingRef.matrix3x4() << "\n";
+            // Matrix3x4 from Sophus library is of type SE3
+            // which - in turn - internally is a Matrix<Scalar,3,4>
+            // Conversion to Translation and Quaternion is below.
+            // First show timestamp (based on 25 fps) in milliseconds:
+            csvFile << frame->id * (1.0 / 25.0) * 1000.0 << ",";
+            // Translation:
+            csvFile << t.x() << ","
+                    << t.y() << ","
+                    << t.z() << ",";
+            // Quaternion:
+            csvFile << q.w() << ","
+                    << q.x() << ","
+                    << q.y() << ","
+                    << q.z() << "\n";
+            csvFile.flush(); //Flush because Destructor is never called...
         }
 
 
         virtual void pushLiveFrame(FrameHessian* image)
         {
             // can be used to get the raw image / intensity pyramid.
+            printf("OUT; pushLiveFrame\n");
         }
 
         virtual void pushDepthImage(MinimalImageB3* image)
@@ -149,6 +178,7 @@ public:
 
         virtual void pushDepthImageFloat(MinimalImageF* image, FrameHessian* KF )
         {
+            /*
             printf("OUT: Predicted depth for KF %d (id %d, time %f, internal frame-ID %d). CameraToWorld:\n",
                    KF->frameID,
                    KF->shell->incoming_id,
@@ -169,6 +199,9 @@ public:
                 }
                 if(maxWrite==0) break;
             }
+            
+            */
+            
         }
 
 

@@ -161,11 +161,12 @@ public:
 
 	void setGammaFunction(float* BInv);
 	void setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH);
+        void setCameraPoses(std::vector<SE3> poses);
 
 private:
 
 	CalibHessian Hcalib;
-
+        std::vector<SE3> cameraPoses;
 
 
 
