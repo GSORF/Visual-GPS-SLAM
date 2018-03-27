@@ -1,0 +1,253 @@
+akp@akp:~$ ./runBlenderSceneCity.sh 
+loading data from Downloads/sequence_BlenderSceneCity/images_withRotation!
+loading calibration from Downloads/sequence_BlenderSceneCity/camera.txt!
+
+=============== PRESET Settings: ===============
+FAST settings:
+- 5x real-time enforcing
+- 800 active points
+- 4-6 active frames
+- 1-4 LM iteration each KF
+- 424 x 320 image resolution
+==============================================
+PHOTOMETRIC MODE WITHOUT CALIBRATION!
+USING SAMPLE OUTPUT WRAPPER!
+QUIET MODE, I'll shut up!
+SAVE IMAGES!
+Reading Calibration from file Downloads/sequence_BlenderSceneCity/camera.txt ... found!
+Input resolution: 1920 1080
+In: 600.000000 600.000000 960.000000 540.000000 0.000000
+Out: Rectify Crop
+Output resolution: 424 320
+finding CROP optimal new model!
+initial range: x: -1.6159 - 1.6143; y: -0.9089 - 0.9073!
+iteration 00001: range: x: -1.6078 - 1.6062; y: -0.9089 - 0.9073!
+iteration 00002: range: x: -1.5998 - 1.5982; y: -0.9089 - 0.9073!
+iteration 00003: range: x: -1.5998 - 1.5982; y: -0.9044 - 0.9027!
+iteration 00004: range: x: -1.5998 - 1.5982; y: -0.8998 - 0.8982!
+iteration 00005: range: x: -1.5998 - 1.5982; y: -0.8998 - 0.8982!
+
+Rectified Kamera Matrix:
+132.272       0 211.606
+      0 177.413 159.642
+      0       0       1
+
+NO PHOTOMETRIC Calibration!
+Reading Photometric Calibration from file 
+PhotometricUndistorter: Could not open file!
+set timestamps and exposures to zero!
+set EXPOSURES to zero!
+got 600 images and 0 timestamps and 0 exposures.!
+set timestamps and exposures to zero!
+set EXPOSURES to zero!
+got 600 images and 0 timestamps and 0 exposures.!
+ImageFolderReader: got 600 files in Downloads/sequence_BlenderSceneCity/images_withRotation!
+using pyramid levels 0 to 3. coarsest resolution: 53 x 40!
+OUT: Created SampleOutputWrapper
+START PANGOLIN!
+ADDED NEW ACTIVE FRAME: id=0
+OpenGL Error: XX (1282)
+In: /home/akp/Pangolin/include/pangolin/gl/gl.hpp, line 201
+FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)
+ADDED NEW ACTIVE FRAME: id=1
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=2
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=3
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=4
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=5
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=6
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=7
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=8
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=9
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=10
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+INITIALIZE FROM INITIALIZER (797 pts)!
+ADDED NEW ACTIVE FRAME: id=11
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=12
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=13
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=14
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=15
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=16
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=17
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=18
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=19
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=20
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=21
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=22
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=23
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=24
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=25
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+I THINK INITIALIZATINO FAILED! Resetting.
+RESETTING!
+destroyed ThreadReduce
+ADDED NEW ACTIVE FRAME: id=26
+FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)
+ADDED NEW ACTIVE FRAME: id=27
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=28
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=29
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=30
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=31
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=32
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=33
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+INITIALIZE FROM INITIALIZER (799 pts)!
+ADDED NEW ACTIVE FRAME: id=34
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=35
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=36
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=37
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=38
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=39
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=40
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=41
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=42
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=43
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=44
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=45
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=46
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=47
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=48
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=49
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=50
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=51
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+I THINK INITIALIZATINO FAILED! Resetting.
+RESETTING!
+destroyed ThreadReduce
+ADDED NEW ACTIVE FRAME: id=52
+FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)
+ADDED NEW ACTIVE FRAME: id=53
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=54
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=55
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=56
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=57
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=58
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+ADDED NEW ACTIVE FRAME: id=59
+FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
+INITIALIZE FROM INITIALIZER (798 pts)!
+ADDED NEW ACTIVE FRAME: id=60
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=61
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=62
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=63
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=64
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=65
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=66
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=67
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=68
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=69
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=70
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=71
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=72
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=73
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=74
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=75
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=76
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=77
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=78
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=79
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=80
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=81
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=82
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=83
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=84
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=85
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=86
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=87
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=88
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=89
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=90
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=91
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=92
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=93
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=94
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=95
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+ADDED NEW ACTIVE FRAME: id=96
+FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)
+
