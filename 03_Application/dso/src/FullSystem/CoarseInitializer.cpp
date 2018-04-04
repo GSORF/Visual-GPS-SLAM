@@ -47,6 +47,7 @@ namespace dso
 
 CoarseInitializer::CoarseInitializer(int ww, int hh) : thisToNext_aff(0,0), thisToNext(SE3())
 {
+        printf("FUNCTION: CoarseInitializer::CoarseInitializer(ww=%d, hh=%d)\n", ww, hh);
 	for(int lvl=0; lvl<pyrLevelsUsed; lvl++)
 	{
 		points[lvl] = 0;
@@ -68,6 +69,7 @@ CoarseInitializer::CoarseInitializer(int ww, int hh) : thisToNext_aff(0,0), this
 }
 CoarseInitializer::~CoarseInitializer()
 {
+        printf("FUNCTION: CoarseInitializer::~CoarseInitializer()\n");
 	for(int lvl=0; lvl<pyrLevelsUsed; lvl++)
 	{
 		if(points[lvl] != 0) delete[] points[lvl];
@@ -80,8 +82,13 @@ CoarseInitializer::~CoarseInitializer()
 
 bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)
 {
-    printf("FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)\n");
+        printf("FUNCTION: CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IOWrap::Output3DWrapper*> &wraps)\n");
 	newFrame = newFrameHessian;
+        //ADAM: Changed to use the prediction
+        //********* newFrame->shell->camToWorld = newFrame->shell->camToWorld_predicted;
+        //********* thisToNext.translation() = newFrame->shell->camToWorld_predicted.translation();
+        std::cout << "FUNCTION: CoarseInitializer::trackFrame(), translation set to %s\n" << newFrame->shell->camToWorld.translation() << std::endl;
+
 
     for(IOWrap::Output3DWrapper* ow : wraps)
         ow->pushLiveFrame(newFrameHessian);
@@ -97,7 +104,9 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 	if(!snapped)
 	{
+                //ADAM: Change: Do not use Zero Vector, but measurement:
 		thisToNext.translation().setZero();
+                //thisToNext = newFrame->shell->camToWorld_predicted;
 		for(int lvl=0;lvl<pyrLevelsUsed;lvl++)
 		{
 			int npts = numPoints[lvl];
@@ -113,7 +122,7 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 
 	SE3 refToNew_current = thisToNext;
-	AffLight refToNew_aff_current = thisToNext_aff;
+        AffLight refToNew_aff_current = thisToNext_aff;
 
 	if(firstFrame->ab_exposure>0 && newFrame->ab_exposure>0)
 		refToNew_aff_current = AffLight(logf(newFrame->ab_exposure /  firstFrame->ab_exposure),0); // coarse approximation.
@@ -252,10 +261,10 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 
 
-        thisToNext = refToNew_current;
         
         //TODO: Check here later!!!
-	//thisToNext = newFrame->shell->camToWorld_predicted;
+	thisToNext = refToNew_current;
+        //thisToNext = newFrame->shell->camToWorld_predicted;
 	thisToNext_aff = refToNew_aff_current;
 
 	for(int i=0;i<pyrLevelsUsed-1;i++)
@@ -272,7 +281,7 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 
 
-    debugPlot(0,wraps);
+        debugPlot(0,wraps);
 
 
 
@@ -281,6 +290,7 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 
 void CoarseInitializer::debugPlot(int lvl, std::vector<IOWrap::Output3DWrapper*> &wraps)
 {
+    printf("FUNCTION: CoarseInitializer::debugPlot(int lvl, std::vector<IOWrap::Output3DWrapper*> &wraps)\n");
     bool needCall = false;
     for(IOWrap::Output3DWrapper* ow : wraps)
         needCall = needCall || ow->needPushDepthImage();
@@ -336,6 +346,7 @@ Vec3f CoarseInitializer::calcResAndGS(
 		const SE3 &refToNew, AffLight refToNew_aff,
 		bool plot)
 {
+        printf("FUNCTION: CoarseInitializer::calcResAndGS()\n");
 	int wl = w[lvl], hl = h[lvl];
 	Eigen::Vector3f* colorRef = firstFrame->dIp[lvl];
 	Eigen::Vector3f* colorNew = newFrame->dIp[lvl];
@@ -591,6 +602,7 @@ Vec3f CoarseInitializer::calcResAndGS(
 
 float CoarseInitializer::rescale()
 {
+        printf("FUNCTION: CoarseInitializer::rescale()\n");
 	float factor = 20*thisToNext.translation().norm();
 //	float factori = 1.0f/factor;
 //	float factori2 = factori*factori;
@@ -614,6 +626,7 @@ float CoarseInitializer::rescale()
 
 Vec3f CoarseInitializer::calcEC(int lvl)
 {
+        printf("FUNCTION: CoarseInitializer::calcEC(lvl=%d)\n", lvl);
 	if(!snapped) return Vec3f(0,0,numPoints[lvl]);
 	AccumulatorX<2> E;
 	E.initialize();
@@ -635,7 +648,8 @@ Vec3f CoarseInitializer::calcEC(int lvl)
 }
 void CoarseInitializer::optReg(int lvl)
 {
-	int npts = numPoints[lvl];
+        printf("FUNCTION: CoarseInitializer::optReg(lvl=%d)\n", lvl);
+		int npts = numPoints[lvl];
 	Pnt* ptsl = points[lvl];
 	if(!snapped)
 	{
@@ -674,6 +688,7 @@ void CoarseInitializer::optReg(int lvl)
 
 void CoarseInitializer::propagateUp(int srcLvl)
 {
+        printf("FUNCTION: CoarseInitializer::propagateUp(srcLvl=%d)\n", srcLvl);
 	assert(srcLvl+1<pyrLevelsUsed);
 	// set idepth of target
 
@@ -715,6 +730,7 @@ void CoarseInitializer::propagateUp(int srcLvl)
 
 void CoarseInitializer::propagateDown(int srcLvl)
 {
+        printf("FUNCTION: CoarseInitializer::propagateUp(srcLvl=%d)\n", srcLvl);
 	assert(srcLvl>0);
 	// set idepth of target
 
@@ -746,6 +762,7 @@ void CoarseInitializer::propagateDown(int srcLvl)
 
 void CoarseInitializer::makeGradients(Eigen::Vector3f** data)
 {
+        printf("FUNCTION: CoarseInitializer::makeGradients(Eigen::Vector3f** data)\n");
 	for(int lvl=1; lvl<pyrLevelsUsed; lvl++)
 	{
 		int lvlm1 = lvl-1;
@@ -768,11 +785,17 @@ void CoarseInitializer::makeGradients(Eigen::Vector3f** data)
 		}
 	}
 }
-void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHessian)
+void CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)
 {
-    printf("FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)\n");
+        printf("FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)\n");
 	makeK(HCalib);
 	firstFrame = newFrameHessian;
+        /*
+         ADAM: Changed to incoorporate initial position from Measurement
+         */
+        firstFrame->shell->camToWorld = firstFrame->shell->camToWorld_predicted;
+        std::cout << "FUNCTION: CoarseInitializer::setFirst(), translation set to %s\n" << firstFrame->shell->camToWorld.translation() << std::endl;
+
 
 	PixelSelector sel(w[0],h[0]);
 
@@ -852,9 +875,9 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
          TODO Adam:
          Check this!
           
-         */
-	thisToNext=firstFrame->shell->camToWorld_predicted;
-	//thisToNext=SE3();
+	 */
+	thisToNext.translation()=firstFrame->shell->camToWorld_predicted.translation();
+        //ORIGINAL: thisToNext=SE3(); 
 	snapped = false;
 	frameID = snappedAt = 0;
 
@@ -865,6 +888,7 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 
 void CoarseInitializer::resetPoints(int lvl)
 {
+        printf("FUNCTION: CoarseInitializer::resetPoints(lvl=%d)\n", lvl);
 	Pnt* pts = points[lvl];
 	int npts = numPoints[lvl];
 	for(int i=0;i<npts;i++)
@@ -893,6 +917,7 @@ void CoarseInitializer::resetPoints(int lvl)
 }
 void CoarseInitializer::doStep(int lvl, float lambda, Vec8f inc)
 {
+        printf("FUNCTION: CoarseInitializer::doStep(lvl=%d, lambda=%.2f, Vec8f inc)\n", lvl, lambda);
 
 	const float maxPixelStep = 0.25;
 	const float idMaxStep = 1e10;
@@ -922,6 +947,7 @@ void CoarseInitializer::doStep(int lvl, float lambda, Vec8f inc)
 }
 void CoarseInitializer::applyStep(int lvl)
 {
+        printf("FUNCTION: CoarseInitializer::makeGradients(Eigen::Vector3f** data)\n");
 	Pnt* pts = points[lvl];
 	int npts = numPoints[lvl];
 	for(int i=0;i<npts;i++)
@@ -941,6 +967,7 @@ void CoarseInitializer::applyStep(int lvl)
 
 void CoarseInitializer::makeK(CalibHessian* HCalib)
 {
+        printf("FUNCTION: CoarseInitializer::makeGradients(Eigen::Vector3f** data)\n");
 	w[0] = wG[0];
 	h[0] = hG[0];
 
@@ -975,6 +1002,7 @@ void CoarseInitializer::makeK(CalibHessian* HCalib)
 
 void CoarseInitializer::makeNN()
 {
+        printf("FUNCTION: CoarseInitializer::makeGradients(Eigen::Vector3f** data)\n");
 	const float NNDistFactor=0.05;
 
 	typedef nanoflann::KDTreeSingleIndexAdaptor<

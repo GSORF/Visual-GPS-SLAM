@@ -540,6 +540,7 @@ bool CoarseTracker::trackNewestCoarse(
 		Vec5 minResForAbort,
 		IOWrap::Output3DWrapper* wrap)
 {
+        printf("FUNCTION: CoarseTracker::trackNewestCoarse(FrameHessian* fh)\n");
 	debugPlot = setting_render_displayCoarseTrackingFull;
 	debugPrint = false;
 
@@ -550,7 +551,7 @@ bool CoarseTracker::trackNewestCoarse(
 
 
 	newFrame = newFrameHessian;
-	int maxIterations[] = {10,20,50,50,50};
+        int maxIterations[] = {10,20,50,50,50};
 	float lambdaExtrapolationLimit = 0.001;
 
 	SE3 refToNew_current = lastToNew_out;
@@ -696,6 +697,12 @@ bool CoarseTracker::trackNewestCoarse(
 
 	// set!
 	lastToNew_out = refToNew_current;
+        /*
+         TODO ADAM: Update pose
+          
+         This line destroys the CoarseTracker Part of the algorithm
+	 //lastToNew_out.translation() = newFrame->shell->camToWorld_predicted.translation();
+         */
 	aff_g2l_out = aff_g2l_current;
 
 

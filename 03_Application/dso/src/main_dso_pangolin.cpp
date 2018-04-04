@@ -144,6 +144,7 @@ void settingsDefault(int preset)
 		benchmarkSetting_height = 320;
 
 		setting_logStuff = false;
+		//setting_logStuff = true;
 	}
 
 	printf("==============================================\n");

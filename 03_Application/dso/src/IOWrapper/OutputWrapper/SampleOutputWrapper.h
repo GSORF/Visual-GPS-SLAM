@@ -49,18 +49,25 @@ class SampleOutputWrapper : public Output3DWrapper
 {
 	
 public:
-	std::ofstream csvFile;
+	std::ofstream posesCSV;
+        std::ofstream hessiansCSV;
+        std::ofstream pointCloudOBJ;
         inline SampleOutputWrapper()
         {
 		
-		csvFile.open("/home/akp/cameraPoses.csv");
+		posesCSV.open("/home/akp/cameraPoses.csv");
+                hessiansCSV.open("/home/akp/cameraHessians.csv");
+                pointCloudOBJ.open("/home/akp/cameraPointcloud.obj");
+                pointCloudOBJ << "o DSO_Pointcloud\n";
                 
-            printf("OUT: Created SampleOutputWrapper with CSV Writer after 3am!\n");
+            printf("OUT: Created SampleOutputWrapper\n");
         }
 
         virtual ~SampleOutputWrapper()
         {
-		csvFile.close();
+		posesCSV.close();
+                hessiansCSV.close();
+                pointCloudOBJ.close();
             printf("OUT: Destroyed SampleOutputWrapper\n");
 		
         }
@@ -87,9 +94,11 @@ public:
 
         virtual void publishKeyframes( std::vector<FrameHessian*> &frames, bool final, CalibHessian* HCalib)
         {
-            /*
+            // Used for acumulating model:
+            
             for(FrameHessian* f : frames)
             {
+                /*
                 printf("OUT: KF %d (%s) (id %d, tme %f): %d active, %d marginalized, %d immature points. CameraToWorld:\n",
                        f->frameID,
                        final ? "final" : "non-final",
@@ -97,28 +106,84 @@ public:
                        f->shell->timestamp,
                        (int)f->pointHessians.size(), (int)f->pointHessiansMarginalized.size(), (int)f->immaturePoints.size());
                 std::cout << f->shell->camToWorld.matrix3x4() << "\n";
-
-
-                int maxWrite = 5;
+                */
+                double timestep_ms = (1.0 / 25.0) * 1000.0;
+                hessiansCSV << f->shell->id * timestep_ms << ",";
+                
+                //int maxWrite = 5;
                 for(PointHessian* p : f->pointHessians)
                 {
+                    /*
                     printf("OUT: Example Point x=%.1f, y=%.1f, idepth=%f, idepth std.dev. %f, %d inlier-residuals\n",
                            p->u, p->v, p->idepth_scaled, sqrt(1.0f / p->idepth_hessian), p->numGoodResiduals );
-                    maxWrite--;
-                    if(maxWrite==0) break;
+                    */
+                    
+                    //skip for final!=false (according to Output3DWrapper.h)
+                    if(final==false)
+                    {
+                        // Create 3D Vector of point in Image Space
+                        Eigen::Vector4d imagePoint(p->u,p->v,p->idepth_scaled, 1.0);
+                        // Transform to camera space (use inverse of calibration matrix):
+                        // TODO: Don't know how to do that... ...yet.
+                        // Transform to world space:
+                        Eigen::Matrix4d cam2World( f->shell->camToWorld.matrix() );
+                        Eigen::Vector4d worldPoint = cam2World * imagePoint;
+
+                        pointCloudOBJ << "v " << worldPoint[0] << " " << worldPoint[1] << " " << worldPoint[2] << "\n";
+                        pointCloudOBJ.flush();
+                    }
+
+
+                    hessiansCSV << p->idepth_hessian << ", ";
+
+                    //Flush because Destructor is never called...
+                    hessiansCSV.flush();
+            
+                    
+                    //maxWrite--;
+                    //if(maxWrite==0) break;
                 }
             }
             
-            */
+            
+            
+            
+
+            
+            
         }
 
         virtual void publishCamPose(FrameShell* frame, CalibHessian* HCalib)
         {
+            
+            // First show timestamp (based on 25 fps) in milliseconds:
+            posesCSV << frame->id * (1.0 / 25.0) * 1000.0 << ",";
+            // Translation:
+            posesCSV << frame->camToWorld.inverse().translation().row(0) << ","
+                    << frame->camToWorld.inverse().translation().row(1) << ","
+                    << frame->camToWorld.inverse().translation().row(2) << ",";
+            // Quaternion:
+            posesCSV << frame->camToWorld.inverse().unit_quaternion().w() << ","
+                    << frame->camToWorld.inverse().unit_quaternion().x() << ","
+                    << frame->camToWorld.inverse().unit_quaternion().y() << ","
+                    << frame->camToWorld.inverse().unit_quaternion().z()<< "\n";
+            posesCSV.flush(); //Flush because Destructor is never called...
+
+
+            
+            /*
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
                    frame->incoming_id,
                    frame->timestamp,
                    frame->id);
             
+            // Matrix3x4 from Sophus library is of type SE3
+            // which - in turn - internally is a Matrix<Scalar,3,4>
+            // Conversion to Translation and Quaternion is below.
+            // First show timestamp (based on 25 fps) in milliseconds:
+            double timestep_ms = (1.0 / 25.0) * 1000.0;
+            
+            Eigen::Affine3d dsoPose(frame->camToWorld.matrix3x4());
             // Matrix converting from DSO space to Blender space (will be used later for visualization):
             // x = -x
             // y =  z
@@ -132,39 +197,52 @@ public:
             dso2Blender.linear() = linearD2B;
 
             // Transform the pose back to Blender:
-
-            Eigen::Affine3d dsoPose(frame->camToWorld.matrix3x4());
-            
             Eigen::Affine3d blenderCam2World = dso2Blender * dsoPose;
             Eigen::Affine3d blenderWorld2Cam = blenderCam2World.inverse(); //Inverse = World to Camera
 
             Eigen::Quaterniond q(blenderWorld2Cam.linear());
             Eigen::Vector3d t(blenderWorld2Cam.translation());
             
-            std::cout << frame->camToWorld.matrix3x4() << "\n";
-            std::cout << "camToTrackingRef: " << frame->camToTrackingRef.matrix3x4() << "\n";
-            // Matrix3x4 from Sophus library is of type SE3
-            // which - in turn - internally is a Matrix<Scalar,3,4>
-            // Conversion to Translation and Quaternion is below.
-            // First show timestamp (based on 25 fps) in milliseconds:
-            csvFile << frame->id * (1.0 / 25.0) * 1000.0 << ",";
+            
+            posesCSV << frame->id * timestep_ms << ",";
             // Translation:
-            csvFile << t.x() << ","
+            posesCSV << t.x() << ","
                     << t.y() << ","
                     << t.z() << ",";
             // Quaternion:
-            csvFile << q.w() << ","
+            posesCSV << q.w() << ","
                     << q.x() << ","
                     << q.y() << ","
                     << q.z() << "\n";
-            csvFile.flush(); //Flush because Destructor is never called...
+
+            //Flush because Destructor is never called...
+            posesCSV.flush();
+            
+            */
+            
+            
+            
+            
         }
 
 
         virtual void pushLiveFrame(FrameHessian* image)
         {
+            /*
             // can be used to get the raw image / intensity pyramid.
-            printf("OUT; pushLiveFrame\n");
+            printf("OUT: pushLiveFrame %d (time %f, internal ID %d). CameraToWorld:\n",
+                   image->shell->incoming_id,
+                   image->shell->timestamp,
+                   image->shell->id);
+            
+            FrameShell* shell = image->shell;
+            
+            std::cout << shell->camToWorld.matrix3x4() << "\n";
+            std::cout << "camToTrackingRef: " << shell->camToTrackingRef.matrix3x4() << "\n";
+            */
+            
+            
+            
         }
 
         virtual void pushDepthImage(MinimalImageB3* image)
@@ -185,7 +263,7 @@ public:
                    KF->shell->timestamp,
                    KF->shell->id);
             std::cout << KF->shell->camToWorld.matrix3x4() << "\n";
-
+            
             int maxWrite = 5;
             for(int y=0;y<image->h;y++)
             {
@@ -194,13 +272,14 @@ public:
                     if(image->at(x,y) <= 0) continue;
 
                     printf("OUT: Example Idepth at pixel (%d,%d): %f.\n", x,y,image->at(x,y));
+                    
                     maxWrite--;
                     if(maxWrite==0) break;
                 }
                 if(maxWrite==0) break;
             }
-            
             */
+            
             
         }
 

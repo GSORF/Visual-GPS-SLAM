@@ -479,6 +479,7 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 
 void FullSystem::traceNewCoarse(FrameHessian* fh)
 {
+        printf("FUNCTION: FullSystem::traceNewCoarse(FrameHessian* fh)\n");
 	boost::unique_lock<boost::mutex> lock(mapMutex);
 
 	int trace_total=0, trace_good=0, trace_oob=0, trace_out=0, trace_skip=0, trace_badcondition=0, trace_uninitialized=0;
@@ -822,7 +823,7 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
     if(isLost) return;
 	boost::unique_lock<boost::mutex> lock(trackMutex);
 
-        printf("ADDED NEW ACTIVE FRAME: id=%d\n", id);
+        printf("ADDED NEW ACTIVE FRAME: FullSystem::addActiveFrame( ImageAndExposure* image, id=%d )\n", id);
 	// =========================== add into allFrameHistory =========================
 	FrameHessian* fh = new FrameHessian();
 	FrameShell* shell = new FrameShell();
@@ -832,6 +833,8 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
         {
             printf("\nLoading Camera pose number %d\n\n", id);
             shell->camToWorld_predicted = this->cameraPoses.at(id);
+            shell->hasPrediction = true;
+            initialCameraPose = shell->camToWorld_predicted;
         }
 	shell->camToWorld = initialCameraPose;		// no lock required, as fh is not used anywhere yet.
         shell->aff_g2l = AffLight(0,0);
@@ -927,6 +930,7 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 }
 void FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)
 {
+        printf("FUNCTION: FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)\n");
 
 
 	if(linearizeOperation)
@@ -968,6 +972,7 @@ void FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)
 
 void FullSystem::mappingLoop()
 {
+        printf("FUNCTION: FullSystem::mappingLoop()\n");
 	boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 
 	while(runMapping)
@@ -1039,6 +1044,7 @@ void FullSystem::mappingLoop()
 
 void FullSystem::blockUntilMappingIsFinished()
 {
+        printf("FUNCTION: FullSystem::blockUntilMappingIsFinished()\n");
 	boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 	runMapping = false;
 	trackedFrameSignal.notify_all();
@@ -1050,6 +1056,7 @@ void FullSystem::blockUntilMappingIsFinished()
 
 void FullSystem::makeNonKeyFrame( FrameHessian* fh)
 {
+        printf("FUNCTION: FullSystem::makeNonKeyFrame( FrameHessian* fh)\n");
 	// needs to be set by mapping thread. no lock required since we are in mapping thread.
 	{
 		boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1064,6 +1071,7 @@ void FullSystem::makeNonKeyFrame( FrameHessian* fh)
 
 void FullSystem::makeKeyFrame( FrameHessian* fh)
 {
+        printf("FUNCTION: FullSystem::makeKeyFrame( FrameHessian* fh)\n");
 	// needs to be set by mapping thread
 	{
 		boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1222,6 +1230,7 @@ void FullSystem::makeKeyFrame( FrameHessian* fh)
 
 void FullSystem::initializeFromInitializer(FrameHessian* newFrame)
 {
+        printf("FUNCTION: FullSystem::initializeFromInitializer(FrameHessian* newFrame)\n");
 	boost::unique_lock<boost::mutex> lock(mapMutex);
 
 	// add firstframe.
