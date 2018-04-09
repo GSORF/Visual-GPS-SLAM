@@ -87,6 +87,7 @@ public:
 	int id;
 	bool active;
 	SE3 camToWorld;
+        SE3 camToWorld_predicted; // ADAM: Changed to display kalman Filter
 
     inline bool operator < (const KeyFrameDisplay& other) const
     {

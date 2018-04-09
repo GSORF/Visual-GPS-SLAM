@@ -125,6 +125,7 @@ public:
                         Eigen::Vector4d imagePoint(p->u,p->v,p->idepth_scaled, 1.0);
                         // Transform to camera space (use inverse of calibration matrix):
                         // TODO: Don't know how to do that... ...yet.
+                        /////HCalib->fxl();
                         // Transform to world space:
                         Eigen::Matrix4d cam2World( f->shell->camToWorld.matrix() );
                         Eigen::Vector4d worldPoint = cam2World * imagePoint;

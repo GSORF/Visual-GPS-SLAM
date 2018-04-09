@@ -53,6 +53,7 @@ KeyFrameDisplay::KeyFrameDisplay()
 	id = 0;
 	active= true;
 	camToWorld = SE3();
+        camToWorld_predicted = SE3(); // ADAM: Added for KalmanDebug
 
 	needRefresh=true;
 
@@ -79,6 +80,7 @@ void KeyFrameDisplay::setFromF(FrameShell* frame, CalibHessian* HCalib)
 	cxi = -cx / fx;
 	cyi = -cy / fy;
 	camToWorld = frame->camToWorld;
+        camToWorld_predicted = frame->camToWorld_predicted; // ADAM: Added for KalmanDebug
 	needRefresh=true;
 }
 
@@ -361,7 +363,36 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor)
 		glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
 
 		glEnd();
+                
+                /* ADAM: Added Axis Drawing for Keyframes (maybe leave 1.0 for size?) */
+                pangolin::glDrawAxis(0.5f);
+                
+                
 	glPopMatrix();
+        
+        /* ADAM: Draw Prediction (Kalman filter) */
+        
+        glPushMatrix();
+            // Transform from World to (Predicted) Camera
+            Sophus::Matrix4f m_predicted = camToWorld_predicted.matrix().cast<float>();
+            glMultMatrixf((GLfloat*)m_predicted.data());
+            
+            // Draw Coordinate Axes
+            pangolin::glDrawAxis(0.5f);
+            
+            // Draw Point for measurement
+            glBegin(GL_POINTS);
+            glPointSize(5.0);
+            glColor3f(1.0f,0.0f,0.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glEnd();
+            
+            
+
+        
+        glPopMatrix();
+        
+        
 }
 
 

@@ -174,7 +174,14 @@ void PangolinDSOViewer::run()
 			// Activate efficiently by object
 			Visualization3D_display.Activate(Visualization3D_camera);
 			boost::unique_lock<boost::mutex> lk3d(model3DMutex);
-			//pangolin::glDrawColouredCube();
+                        
+                        //ADAM: Changed (commented back in):
+                        //pangolin::glDrawColouredCube();
+                        glLineWidth(lineWidth*2.0f);
+                        pangolin::glDrawAxis(1.0f);
+                        
+                        //END ADAM
+                        
 			int refreshed=0;
 			for(KeyFrameDisplay* fh : keyframes)
 			{
