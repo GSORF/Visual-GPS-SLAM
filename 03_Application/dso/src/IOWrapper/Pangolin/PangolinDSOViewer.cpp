@@ -132,6 +132,8 @@ void PangolinDSOViewer::run()
 	pangolin::Var<bool> settings_showFullTrajectory("ui.FullTrajectory",false,true);
 	pangolin::Var<bool> settings_showActiveConstraints("ui.ActiveConst",true,true);
 	pangolin::Var<bool> settings_showAllConstraints("ui.AllConst",false,true);
+        pangolin::Var<bool> settings_showWorldGrid("ui.showWorldGrid",true,true);
+        pangolin::Var<bool> settings_showAxes("ui.showCoordinateSystems",true,true);
 
 
 	pangolin::Var<bool> settings_show3D("ui.show3D",true,true);
@@ -177,23 +179,42 @@ void PangolinDSOViewer::run()
                         
                         //ADAM: Changed (commented back in):
                         //pangolin::glDrawColouredCube();
-                        glLineWidth(lineWidth*2.0f);
-                        pangolin::glDrawAxis(1.0f);
+                        float lineWidth = 1.0f;
+                        glLineWidth(lineWidth*4.0f);
+                        pangolin::glDrawAxis(5.0f);
                         
+                        //DrawGrid:
+                        if(this->settings_showWorldGrid)
+                        {
+                            glLineWidth(lineWidth);
+                            int gridSize = 10;
+                            glBegin(GL_LINES);
+                            for(int x = -gridSize; x <= gridSize; x++)
+                            {
+                                glVertex2f(x, -gridSize);
+                                glVertex2f(x, gridSize);
+                            }
+                            for(int y = -gridSize; y <= gridSize; y++)
+                            {
+                                glVertex2f(-gridSize, y);
+                                glVertex2f(gridSize, y);
+                            }
+                            glEnd();
+                        }
                         //END ADAM
                         
 			int refreshed=0;
 			for(KeyFrameDisplay* fh : keyframes)
 			{
 				float blue[3] = {0,0,1};
-				if(this->settings_showKFCameras) fh->drawCam(1,blue,0.1);
+				if(this->settings_showKFCameras) fh->drawCam(1,blue,0.1, this->settings_showAxes);
 
 
 				refreshed =+ (int)(fh->refreshPC(refreshed < 10, this->settings_scaledVarTH, this->settings_absVarTH,
 						this->settings_pointCloudMode, this->settings_minRelBS, this->settings_sparsity));
 				fh->drawPC(1);
 			}
-			if(this->settings_showCurrentCamera) currentCam->drawCam(2,0,0.2);
+			if(this->settings_showCurrentCamera) currentCam->drawCam(2,0,0.2, this->settings_showAxes);
 			drawConstraints();
 			lk3d.unlock();
 		}
@@ -258,6 +279,8 @@ void PangolinDSOViewer::run()
 	    this->settings_showKFCameras = settings_showKFCameras.Get();
 	    this->settings_showTrajectory = settings_showTrajectory.Get();
 	    this->settings_showFullTrajectory = settings_showFullTrajectory.Get();
+            this->settings_showWorldGrid = settings_showWorldGrid.Get();
+            this->settings_showAxes = settings_showAxes.Get();
 
 		setting_render_display3D = settings_show3D.Get();
 		setting_render_displayDepth = settings_showLiveDepth.Get();
@@ -420,10 +443,6 @@ void PangolinDSOViewer::drawConstraints()
 		glEnd();
 	}
 }
-
-
-
-
 
 
 void PangolinDSOViewer::publishGraph(const std::map<uint64_t,Eigen::Vector2i> &connectivity)

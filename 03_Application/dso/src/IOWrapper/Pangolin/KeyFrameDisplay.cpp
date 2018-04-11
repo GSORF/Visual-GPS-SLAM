@@ -54,6 +54,7 @@ KeyFrameDisplay::KeyFrameDisplay()
 	active= true;
 	camToWorld = SE3();
         camToWorld_predicted = SE3(); // ADAM: Added for KalmanDebug
+        hasPrediction = false; // ADAM: Added for KalmanDebug
 
 	needRefresh=true;
 
@@ -81,6 +82,7 @@ void KeyFrameDisplay::setFromF(FrameShell* frame, CalibHessian* HCalib)
 	cyi = -cy / fy;
 	camToWorld = frame->camToWorld;
         camToWorld_predicted = frame->camToWorld_predicted; // ADAM: Added for KalmanDebug
+        hasPrediction = frame->hasPrediction; // ADAM: Added for KalmanDebug
 	needRefresh=true;
 }
 
@@ -320,7 +322,7 @@ bool KeyFrameDisplay::refreshPC(bool canRefresh, float scaledTH, float absTH, in
 
 
 
-void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor)
+void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, bool drawAxes)
 {
 	if(width == 0)
 		return;
@@ -365,32 +367,62 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor)
 		glEnd();
                 
                 /* ADAM: Added Axis Drawing for Keyframes (maybe leave 1.0 for size?) */
-                pangolin::glDrawAxis(0.5f);
+                if(drawAxes) pangolin::glDrawAxis(0.5f);
                 
                 
 	glPopMatrix();
         
         /* ADAM: Draw Prediction (Kalman filter) */
-        
-        glPushMatrix();
-            // Transform from World to (Predicted) Camera
-            Sophus::Matrix4f m_predicted = camToWorld_predicted.matrix().cast<float>();
-            glMultMatrixf((GLfloat*)m_predicted.data());
-            
-            // Draw Coordinate Axes
-            pangolin::glDrawAxis(0.5f);
-            
-            // Draw Point for measurement
-            glBegin(GL_POINTS);
-            glPointSize(5.0);
-            glColor3f(1.0f,0.0f,0.0f);
-            glVertex3f(0.0f, 0.0f, 0.0f);
-            glEnd();
-            
-            
+        if(hasPrediction)
+        {
+            glPushMatrix();
+                // Transform from World to (Predicted) Camera
+                Sophus::Matrix4f m_predicted = camToWorld_predicted.matrix().cast<float>();
+                glMultMatrixf((GLfloat*)m_predicted.data());
 
+                // Draw Coordinate Axes
+                if(drawAxes) pangolin::glDrawAxis(0.5f);
+
+                // Draw Point for measurement
+                glBegin(GL_POINTS);
+                glPointSize(5.0);
+                glColor3f(1.0f,0.0f,0.0f);
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glEnd();
+
+                glBegin(GL_LINES);
+                // Draw Camera for visualization
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glEnd();
+
+
+
+
+            glPopMatrix();
+            
+        }
         
-        glPopMatrix();
+        /*END ADAM: Draw Prediction (Kalman filter) */
         
         
 }

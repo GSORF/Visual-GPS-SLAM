@@ -159,15 +159,18 @@ public:
             
             // First show timestamp (based on 25 fps) in milliseconds:
             posesCSV << frame->id * (1.0 / 25.0) * 1000.0 << ",";
+            
+            // TODO Adam: change back to camToWorld (not predicted), because this is only for testing if mapping works
+            
             // Translation:
-            posesCSV << frame->camToWorld.inverse().translation().row(0) << ","
-                    << frame->camToWorld.inverse().translation().row(1) << ","
-                    << frame->camToWorld.inverse().translation().row(2) << ",";
+            posesCSV << frame->camToWorld_predicted.inverse().translation().row(0) << ","
+                    << frame->camToWorld_predicted.inverse().translation().row(1) << ","
+                    << frame->camToWorld_predicted.inverse().translation().row(2) << ",";
             // Quaternion:
-            posesCSV << frame->camToWorld.inverse().unit_quaternion().w() << ","
-                    << frame->camToWorld.inverse().unit_quaternion().x() << ","
-                    << frame->camToWorld.inverse().unit_quaternion().y() << ","
-                    << frame->camToWorld.inverse().unit_quaternion().z()<< "\n";
+            posesCSV << frame->camToWorld_predicted.inverse().unit_quaternion().w() << ","
+                    << frame->camToWorld_predicted.inverse().unit_quaternion().x() << ","
+                    << frame->camToWorld_predicted.inverse().unit_quaternion().y() << ","
+                    << frame->camToWorld_predicted.inverse().unit_quaternion().z()<< "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
 

@@ -117,6 +117,9 @@ private:
 	bool settings_showFullTrajectory;
 	bool settings_showActiveConstraints;
 	bool settings_showAllConstraints;
+        /* ADAM: UI controls to show worldGrid and Coordinate Systems */
+        bool settings_showWorldGrid;
+        bool settings_showAxes;
 
 	float settings_scaledVarTH;
 	float settings_absVarTH;

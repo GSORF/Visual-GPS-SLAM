@@ -81,13 +81,14 @@ public:
 	bool refreshPC(bool canRefresh, float scaledTH, float absTH, int mode, float minBS, int sparsity);
 
 	// renders cam & pointcloud.
-	void drawCam(float lineWidth = 1, float* color = 0, float sizeFactor=1);
+	void drawCam(float lineWidth = 1, float* color = 0, float sizeFactor=1, bool drawAxes=false);
 	void drawPC(float pointSize);
 
 	int id;
 	bool active;
 	SE3 camToWorld;
-        SE3 camToWorld_predicted; // ADAM: Changed to display kalman Filter
+        SE3 camToWorld_predicted; // ADAM: Added to display kalman Filter
+        bool hasPrediction; // ADAM: Added to display kalman Filter
 
     inline bool operator < (const KeyFrameDisplay& other) const
     {
