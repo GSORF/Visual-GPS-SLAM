@@ -62,7 +62,7 @@ public:
 		id=0;
 		poseValid=true;
 		camToWorld = SE3();
-		camToWorld_predicted = SE3();
+                camToWorld_predicted = SE3();
                 hasPrediction=false;
 		timestamp=0;
 		marginalizedAt=-1;

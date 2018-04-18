@@ -788,7 +788,7 @@ void CoarseInitializer::makeGradients(Eigen::Vector3f** data)
 void CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)
 {
         printf("FUNCTION: CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHessian)\n");
-	makeK(HCalib);
+	makeK(HCalib); //this is actually responsible for making the image gradients
 	firstFrame = newFrameHessian;
         /*
          ADAM: Changed to incoorporate initial position from Measurement
@@ -877,6 +877,8 @@ void CoarseInitializer::setFirst(CalibHessian* HCalib, FrameHessian* newFrameHes
           
 	 */
 	thisToNext.translation()=firstFrame->shell->camToWorld_predicted.translation();
+        firstFrame->shell->camToWorld.translation() = Eigen::Vector3d(10.0f,5.0f,8.0f);
+		
         //ORIGINAL: thisToNext=SE3(); 
 	snapped = false;
 	frameID = snappedAt = 0;

@@ -34,6 +34,12 @@
 #include <iostream>
 #include <fstream>
 
+// For outputting a POST request
+#include "util/HTTPPOSTRequest.h"
+#include <chrono>
+#include <boost/asio.hpp>
+#include <boost/date_time.hpp>
+
 namespace dso
 {
 
@@ -49,25 +55,44 @@ class SampleOutputWrapper : public Output3DWrapper
 {
 	
 public:
+        // CSV File output
 	std::ofstream posesCSV;
         std::ofstream hessiansCSV;
         std::ofstream pointCloudOBJ;
+        
+        // HTTP POST Request
+        dso::HTTPPOSTRequest httpPOSTRequest;
+        std::string projectName;
+        std::string projectDescription;
+        
         inline SampleOutputWrapper()
         {
-		
-		posesCSV.open("/home/akp/cameraPoses.csv");
-                hessiansCSV.open("/home/akp/cameraHessians.csv");
-                pointCloudOBJ.open("/home/akp/cameraPointcloud.obj");
-                pointCloudOBJ << "o DSO_Pointcloud\n";
-                
+            posesCSV.open("/home/akp/cameraPoses.csv");
+            hessiansCSV.open("/home/akp/cameraHessians.csv");
+            pointCloudOBJ.open("/home/akp/cameraPointcloud.obj");
+            pointCloudOBJ << "o DSO_Pointcloud\n";
+
+            // Create new project:
+            double now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            projectName = std::to_string((unsigned long)now);
+            projectDescription = "DSO Project from computer \"" + boost::asio::ip::host_name() + "\"";
+            std::cout << "PROJECT NAME=" << projectName << " - PROJECT DESCRIPTION=" << projectDescription << std::endl;
+            std::cout << "TIMESTAMP = " << now;
+            
+            
+            
+            // POST to Webserver:
+            httpPOSTRequest.init("master.kalisz.co", "http");
+            httpPOSTRequest.addProject(projectName, projectDescription);
+   
             printf("OUT: Created SampleOutputWrapper\n");
         }
 
         virtual ~SampleOutputWrapper()
         {
-		posesCSV.close();
-                hessiansCSV.close();
-                pointCloudOBJ.close();
+            posesCSV.close();
+            hessiansCSV.close();
+            pointCloudOBJ.close();
             printf("OUT: Destroyed SampleOutputWrapper\n");
 		
         }
@@ -161,19 +186,23 @@ public:
             posesCSV << frame->id * (1.0 / 25.0) * 1000.0 << ",";
             
             // TODO Adam: change back to camToWorld (not predicted), because this is only for testing if mapping works
+            // Above TODO done, but continue testing!!!
+            
+            SE3 matrix = frame->camToWorld;
+            
             
             // Translation:
-            posesCSV << frame->camToWorld_predicted.inverse().translation().row(0) << ","
-                    << frame->camToWorld_predicted.inverse().translation().row(1) << ","
-                    << frame->camToWorld_predicted.inverse().translation().row(2) << ",";
+            posesCSV << matrix.inverse().translation().row(0) << ","
+                    << matrix.inverse().translation().row(1) << ","
+                    << matrix.inverse().translation().row(2) << ",";
             // Quaternion:
-            posesCSV << frame->camToWorld_predicted.inverse().unit_quaternion().w() << ","
-                    << frame->camToWorld_predicted.inverse().unit_quaternion().x() << ","
-                    << frame->camToWorld_predicted.inverse().unit_quaternion().y() << ","
-                    << frame->camToWorld_predicted.inverse().unit_quaternion().z()<< "\n";
+            posesCSV << matrix.inverse().unit_quaternion().w() << ","
+                    << matrix.inverse().unit_quaternion().x() << ","
+                    << matrix.inverse().unit_quaternion().y() << ","
+                    << matrix.inverse().unit_quaternion().z()<< "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
-
+            httpPOSTRequest.addCameraPose(this->projectName, matrix.inverse().translation(), matrix.inverse().unit_quaternion() );
             
             /*
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
