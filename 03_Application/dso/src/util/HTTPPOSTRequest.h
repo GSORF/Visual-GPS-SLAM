@@ -82,47 +82,55 @@ public:
         sendPOST(message);
     }
     
-    inline void addFilteredGPS(std::string name, std::string description)
+    inline void addFilteredGPS(std::string name, long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addfilteredgps&projectname=" + txtProjectName.value + "&gpsfilteredtimestamp=" + txtFilteredGPSTimestamp.value + "&gpsfilteredlatitude=" + txtFilteredGPSLatitude.value + "&gpsfilteredlongitude=" + txtFilteredGPSLongitude.value + "&gpsfilteredaccuracy=" + txtFilteredGPSAccuracy.value + "&gpsfilteredbearing=" + txtFilteredGPSBearing.value + "&gpsfilteredspeed=" + txtFilteredGPSSpeed.value + "&gpsfilteredaltitude=" + txtFilteredGPSAltitude.value + "&gpsfilteredsatellites=" + txtFilteredGPSSatellites.value;"
         
-        //NOT IMPLEMENTED YET!
-        
         std::string message;
         
-        message += "action=addproject";
+        message += "action=addfilteredgps";
         message += "&projectname=" + name;
-        message += "&projectdescription=" + description;
+        message += "&gpsfilteredtimestamp=" + std::to_string(timestamp);
+        message += "&gpsfilteredlatitude=" + std::to_string(latitude);
+        message += "&gpsfilteredlongitude=" + std::to_string(longitude);
+        message += "&gpsfilteredaccuracy=" + std::to_string(accuracy);
+        message += "&gpsfilteredbearing=" + std::to_string(bearing);
+        message += "&gpsfilteredspeed=" + std::to_string(speed);
+        message += "&gpsfilteredaltitude=" + std::to_string(altitude);
+        message += "&gpsfilteredsatellites=" + std::to_string(satellites);
         
         sendPOST(message);
     }
     
-    inline void addRawGPS(std::string name, std::string description)
+    inline void addRawGPS(std::string name, long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addrawgps&projectname=" + txtProjectName.value + "&gpsrawtimestamp=" + txtRawGPSTimestamp.value + "&gpsrawlatitude=" + txtRawGPSLatitude.value + "&gpsrawlongitude=" + txtRawGPSLongitude.value + "&gpsrawaccuracy=" + txtRawGPSAccuracy.value + "&gpsrawbearing=" + txtRawGPSBearing.value + "&gpsrawspeed=" + txtRawGPSSpeed.value + "&gpsrawaltitude=" + txtRawGPSAltitude.value + "&gpsrawsatellites=" + txtRawGPSSatellites.value"
         
-        //NOT IMPLEMENTED YET!
-        
         std::string message;
         
-        message += "action=addproject";
+        message += "action=addrawgps";
         message += "&projectname=" + name;
-        message += "&projectdescription=" + description;
+        message += "&gpsrawtimestamp=" + std::to_string(timestamp);
+        message += "&gpsrawlatitude=" + std::to_string(latitude);
+        message += "&gpsrawlongitude=" + std::to_string(longitude);
+        message += "&gpsrawaccuracy=" + std::to_string(accuracy);
+        message += "&gpsrawbearing=" + std::to_string(bearing);
+        message += "&gpsrawspeed=" + std::to_string(speed);
+        message += "&gpsrawaltitude=" + std::to_string(altitude);
+        message += "&gpsrawsatellites=" + std::to_string(satellites);
         
         sendPOST(message);
     }
     
-    inline void addCameraPose(std::string name, Eigen::Vector3d translation, Eigen::Quaterniond quaternion)
+    inline void addCameraPose(std::string name, long timestamp, Eigen::Vector3d translation, Eigen::Quaterniond quaternion)
     {
         // Example: "action=addpose&projectname=" + txtProjectName.value + "&posetimestamp=" + txtPoseTimestamp.value + "&posex=" + txtPoseX.value + "&posey=" + txtPoseY.value + "&posez=" + txtPoseZ.value + "&poseqw=" + txtPoseQW.value + "&poseqx=" + txtPoseQX.value + "&poseqy=" + txtPoseQY.value + "&poseqz=" + txtPoseQZ.value"
         
         std::string message;
-        this->timestamp += 200;
-        
         
         message += "action=addpose";
         message += "&projectname=" + name;
-        message += "&posetimestamp=" + std::to_string(this->timestamp);
+        message += "&posetimestamp=" + std::to_string(timestamp);
         message += "&posex=" + std::to_string( (double)translation[0] );
         message += "&posey=" + std::to_string( (double)translation[1] );
         message += "&posez=" + std::to_string( (double)translation[2] );
@@ -135,30 +143,31 @@ public:
         sendPOST(message);
     }
     
-    inline void addPointCloud(std::string name, std::string description)
+    inline void addPointCloud(std::string name, std::string pointString)
     {
         // Example: "action=addpointcloud&projectname=" + txtProjectName.value + "&pointstring=" + txtPointCloud.value"
         
-        //NOT IMPLEMENTED YET!
-
-        
         std::string message;
         
-        message += "action=addproject";
+        message += "action=addpointcloud";
         message += "&projectname=" + name;
-        message += "&projectdescription=" + description;
+        message += "&pointstring=" + pointString;
         
         sendPOST(message);
     }
     
-    inline void addEverything(std::string name, std::string description)
+    inline void addEverything(std::string name,
+                              std::string description,
+                              long timestamp,
+                              double filteredLatitude, double filteredLongitude, double filteredAccuracy, double filteredBearing, double filteredSpeed, double filteredAltitude, int filteredSatellites,
+                              double rawLatitude, double rawLongitude, double rawAccuracy, double rawBearing, double rawSpeed, double rawAltitude, int rawSatellites,
+                              Eigen::Vector3d translation, Eigen::Quaterniond quaternion,
+                              std::string pointString)
     {
-        // Example: "action=addproject&projectname=32452351&projectdescription=HelloWorld"
-        
-        //NOT IMPLEMENTED YET!
         
         /*
-         
+         Example:
+         * 
          var data = "action=addeverything";
 		data += "&projectname=" + txtProjectName.value + "&projectdescription=" + txtProjectDescription.value;
 		data += "&gpsfilteredtimestamp=" + txtFilteredGPSTimestamp.value + "&gpsfilteredlatitude=" + txtFilteredGPSLatitude.value + "&gpsfilteredlongitude=" + txtFilteredGPSLongitude.value + "&gpsfilteredaccuracy=" + txtFilteredGPSAccuracy.value + "&gpsfilteredbearing=" + txtFilteredGPSBearing.value + "&gpsfilteredspeed=" + txtFilteredGPSSpeed.value + "&gpsfilteredaltitude=" + txtFilteredGPSAltitude.value + "&gpsfilteredsatellites=" + txtFilteredGPSSatellites.value;
@@ -170,9 +179,38 @@ public:
 
         std::string message;
         
-        message += "action=addproject";
+        message += "action=addeverything";
         message += "&projectname=" + name;
-        message += "&projectdescription=" + description;
+        message += "&projectdescription=" + urlencode(description);
+        
+        message += "&gpsfilteredtimestamp=" + std::to_string(timestamp);
+        message += "&gpsfilteredlatitude=" + std::to_string(filteredLatitude);
+        message += "&gpsfilteredlongitude=" + std::to_string(filteredLongitude);
+        message += "&gpsfilteredaccuracy=" + std::to_string(filteredAccuracy);
+        message += "&gpsfilteredbearing=" + std::to_string(filteredBearing);
+        message += "&gpsfilteredspeed=" + std::to_string(filteredSpeed);
+        message += "&gpsfilteredaltitude=" + std::to_string(filteredAltitude);
+        message += "&gpsfilteredsatellites=" + std::to_string(filteredSatellites);
+        
+        message += "&gpsrawtimestamp=" + std::to_string(timestamp);
+        message += "&gpsrawlatitude=" + std::to_string(rawLatitude);
+        message += "&gpsrawlongitude=" + std::to_string(rawLongitude);
+        message += "&gpsrawaccuracy=" + std::to_string(rawAccuracy);
+        message += "&gpsrawbearing=" + std::to_string(rawBearing);
+        message += "&gpsrawspeed=" + std::to_string(rawSpeed);
+        message += "&gpsrawaltitude=" + std::to_string(rawAltitude);
+        message += "&gpsrawsatellites=" + std::to_string(rawSatellites);
+        
+        message += "&posetimestamp=" + std::to_string(timestamp);
+        message += "&posex=" + std::to_string( (double)translation[0] );
+        message += "&posey=" + std::to_string( (double)translation[1] );
+        message += "&posez=" + std::to_string( (double)translation[2] );
+        message += "&poseqw=" + std::to_string(quaternion.w());
+        message += "&poseqx=" + std::to_string(quaternion.x());
+        message += "&poseqy=" + std::to_string(quaternion.y());
+        message += "&poseqz=" + std::to_string(quaternion.z());
+        
+        message += "&pointstring=" + pointString;
         
         sendPOST(message);
     }

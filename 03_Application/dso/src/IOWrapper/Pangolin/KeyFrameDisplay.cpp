@@ -242,6 +242,9 @@ bool KeyFrameDisplay::refreshPC(bool canRefresh, float scaledTH, float absTH, in
 			if(my_sparsifyFactor > 1 && rand()%my_sparsifyFactor != 0) continue;
 			int dx = patternP[pnt][0];
 			int dy = patternP[pnt][1];
+                        
+                        std::cout << "PANGOLIN: dx=" << dx << std::endl;
+                        std::cout << "PANGOLIN: dy=" << dy << std::endl;
 
 			tmpVertexBuffer[vertexBufferNumPoints][0] = ((originalInputSparse[i].u+dx)*fxi + cxi) * depth;
 			tmpVertexBuffer[vertexBufferNumPoints][1] = ((originalInputSparse[i].v+dy)*fyi + cyi) * depth;

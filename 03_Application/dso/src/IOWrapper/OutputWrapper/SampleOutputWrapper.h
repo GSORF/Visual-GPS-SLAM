@@ -132,9 +132,11 @@ public:
                        (int)f->pointHessians.size(), (int)f->pointHessiansMarginalized.size(), (int)f->immaturePoints.size());
                 std::cout << f->shell->camToWorld.matrix3x4() << "\n";
                 */
-                double timestep_ms = (1.0 / 25.0) * 1000.0;
-                hessiansCSV << f->shell->id * timestep_ms << ",";
-                
+                long timestamp = f->shell->id * (1.0 / 25.0) * 1000.0;
+                hessiansCSV << timestamp << ",";
+                std::string pointCloudString = "";
+                bool firstPoint = true;
+               
                 //int maxWrite = 5;
                 for(PointHessian* p : f->pointHessians)
                 {
@@ -146,17 +148,52 @@ public:
                     //skip for final!=false (according to Output3DWrapper.h)
                     if(final==false)
                     {
-                        // Create 3D Vector of point in Image Space
-                        Eigen::Vector4d imagePoint(p->u,p->v,p->idepth_scaled, 1.0);
-                        // Transform to camera space (use inverse of calibration matrix):
-                        // TODO: Don't know how to do that... ...yet.
-                        /////HCalib->fxl();
-                        // Transform to world space:
-                        Eigen::Matrix4d cam2World( f->shell->camToWorld.matrix() );
-                        Eigen::Vector4d worldPoint = cam2World * imagePoint;
+                        // Go through all points in the pattern 
+                        //for(int pnt=0;pnt<patternNum;pnt++)
+                        //{
+                            //int dx = patternP[pnt][0];
+                            //int dy = patternP[pnt][1];
+                            
+                            float fx,fy,cx,cy;
+                            float fxi,fyi,cxi,cyi;
+	
+                            fx = HCalib->fxl();
+                            fy = HCalib->fyl();
+                            cx = HCalib->cxl();
+                            cy = HCalib->cyl();
+                            fxi = 1/fx;
+                            fyi = 1/fy;
+                            cxi = -cx / fx;
+                            cyi = -cy / fy;
 
-                        pointCloudOBJ << "v " << worldPoint[0] << " " << worldPoint[1] << " " << worldPoint[2] << "\n";
-                        pointCloudOBJ.flush();
+                            // Transform to camera space (use inverse of calibration matrix):
+                            float depth = 1.0f / p->idepth_scaled;
+                            float x = ((p->u)*fxi + cxi) * depth;  //((p->u+dx)*fxi + cxi) * depth;
+                            float y = ((p->v)*fyi + cyi) * depth;  //((p->v+dy)*fyi + cyi) * depth;
+                            float z = depth*(1 + 2*fxi * (rand()/(float)RAND_MAX-0.5f));
+
+                            // Create 3D Vector of point in world space
+                            Eigen::Vector4d imagePoint(x,y,z, 1.0);
+                            // Transform to world space:
+                            Eigen::Matrix4d cam2World( f->shell->camToWorld.matrix() );
+                            Eigen::Vector4d worldPoint = cam2World * imagePoint;
+
+                            pointCloudOBJ << "v " << worldPoint[0] << " " << worldPoint[1] << " " << worldPoint[2] << "\n";
+                            pointCloudOBJ.flush();
+                            
+                            if(!firstPoint)
+                            {
+                                pointCloudString += ";";
+                            
+                            }
+                            
+                            pointCloudString += std::to_string(worldPoint[0]) + "," 
+                                              + std::to_string(worldPoint[1]) + "," 
+                                              + std::to_string(worldPoint[2]) + ","
+                                              + std::to_string(p->color[0]) + "," 
+                                              + std::to_string(p->color[1]) + "," 
+                                              + std::to_string(p->color[2]);
+                        //}
                     }
 
 
@@ -169,6 +206,11 @@ public:
                     //maxWrite--;
                     //if(maxWrite==0) break;
                 }
+                
+                httpPOSTRequest.addPointCloud(this->projectName, pointCloudString);
+            
+                
+                
             }
             
             
@@ -183,26 +225,28 @@ public:
         {
             
             // First show timestamp (based on 25 fps) in milliseconds:
-            posesCSV << frame->id * (1.0 / 25.0) * 1000.0 << ",";
+            long timestamp = frame->id * (1.0 / 25.0) * 1000.0;
+            posesCSV << timestamp << ",";
             
             // TODO Adam: change back to camToWorld (not predicted), because this is only for testing if mapping works
             // Above TODO done, but continue testing!!!
             
             SE3 matrix = frame->camToWorld;
-            
+            Eigen::Vector3d translation = matrix.translation().cast<double>();
+            Eigen::Quaterniond quaternion = matrix.unit_quaternion().cast<double>();
             
             // Translation:
-            posesCSV << matrix.inverse().translation().row(0) << ","
-                    << matrix.inverse().translation().row(1) << ","
-                    << matrix.inverse().translation().row(2) << ",";
+            posesCSV << translation[0] << ","
+                    << translation[1] << ","
+                    << translation[2] << ",";
             // Quaternion:
-            posesCSV << matrix.inverse().unit_quaternion().w() << ","
-                    << matrix.inverse().unit_quaternion().x() << ","
-                    << matrix.inverse().unit_quaternion().y() << ","
-                    << matrix.inverse().unit_quaternion().z()<< "\n";
+            posesCSV << quaternion.w() << ","
+                    << quaternion.x() << ","
+                    << quaternion.y() << ","
+                    << quaternion.z() << "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
-            httpPOSTRequest.addCameraPose(this->projectName, matrix.inverse().translation(), matrix.inverse().unit_quaternion() );
+            httpPOSTRequest.addCameraPose(this->projectName, timestamp, matrix.inverse().translation(), matrix.inverse().unit_quaternion() );
             
             /*
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
