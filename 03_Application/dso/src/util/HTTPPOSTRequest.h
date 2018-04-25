@@ -36,17 +36,26 @@ public:
         
     }
     
+    inline HTTPPOSTRequest(std::string host, std::string protocol)
+    {
+        init(host, protocol);
+    }
+    
     inline void init(std::string host, std::string protocol)
     {
         this->host = host;
         this->protocol = protocol;
         this->timestamp = 0;
-        
+        this->active = true;
         
     }
     
     inline void sendPOST(std::string message)
     {
+        // If sending POST requests has been deactivated, return
+        if(!this->active)
+            return;
+        
         //message = "action=addproject&projectname=1524088429&projectdescription=HelloWorld";
         
         std::cout << "SENT POST REQUEST with message: " << message << std::endl;
@@ -244,7 +253,15 @@ public:
         return e.str();
     }
 
-
+    inline void setActive()
+    {
+        this->active = true;
+    }
+    
+    inline void setInactive()
+    {
+        this->active = false;
+    }
     
     
     
@@ -276,6 +293,7 @@ protected:
     
     std::string host;
     std::string protocol;
+    bool active; // Determines if POST requests are being sent
     
     // TODO: Dummy timestamp
     long timestamp;
