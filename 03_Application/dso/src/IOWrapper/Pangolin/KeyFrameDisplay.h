@@ -89,6 +89,11 @@ public:
 	SE3 camToWorld;
         SE3 camToWorld_predicted; // ADAM: Added to display kalman Filter
         bool hasPrediction; // ADAM: Added to display kalman Filter
+        SE3 camToWorld_measured; // ADAM: Added to display GPS
+	bool hasMeasurement; // ADAM: Added to display GPS
+	
+        
+        
 
     inline bool operator < (const KeyFrameDisplay& other) const
     {

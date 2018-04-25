@@ -83,6 +83,7 @@ public:
             
             // POST to Webserver:
             httpPOSTRequest.init("master.kalisz.co", "http");
+            httpPOSTRequest.setInactive(); // TODO ADAM: add possibility to set from main
             httpPOSTRequest.addProject(projectName, projectDescription);
    
             printf("OUT: Created SampleOutputWrapper\n");
@@ -232,8 +233,8 @@ public:
             // Above TODO done, but continue testing!!!
             
             SE3 matrix = frame->camToWorld;
-            Eigen::Vector3d translation = matrix.translation().cast<double>();
-            Eigen::Quaterniond quaternion = matrix.unit_quaternion().cast<double>();
+            Eigen::Vector3d translation = matrix.translation().transpose().cast<double>();
+            Eigen::Quaterniond quaternion = matrix.so3().unit_quaternion().cast<double>();
             
             // Translation:
             posesCSV << translation[0] << ","
@@ -246,7 +247,7 @@ public:
                     << quaternion.z() << "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
-            httpPOSTRequest.addCameraPose(this->projectName, timestamp, matrix.inverse().translation(), matrix.inverse().unit_quaternion() );
+            httpPOSTRequest.addCameraPose(this->projectName, timestamp, matrix.translation(), matrix.unit_quaternion() );
             
             /*
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",

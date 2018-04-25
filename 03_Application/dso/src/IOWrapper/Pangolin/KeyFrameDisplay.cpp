@@ -55,6 +55,8 @@ KeyFrameDisplay::KeyFrameDisplay()
 	camToWorld = SE3();
         camToWorld_predicted = SE3(); // ADAM: Added for KalmanDebug
         hasPrediction = false; // ADAM: Added for KalmanDebug
+	camToWorld_measured = SE3(); // ADAM: Added to display GPS
+	hasMeasurement = false; // ADAM: Added to display GPS
 
 	needRefresh=true;
 
@@ -83,6 +85,8 @@ void KeyFrameDisplay::setFromF(FrameShell* frame, CalibHessian* HCalib)
 	camToWorld = frame->camToWorld;
         camToWorld_predicted = frame->camToWorld_predicted; // ADAM: Added for KalmanDebug
         hasPrediction = frame->hasPrediction; // ADAM: Added for KalmanDebug
+	camToWorld_measured = frame->camToWorld_measured; // ADAM: Added to display GPS
+	hasMeasurement = frame->hasMeasurement; // ADAM: Added to display GPS
 	needRefresh=true;
 }
 
@@ -375,7 +379,58 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 
 	glPopMatrix();
         
-        /* ADAM: Draw Prediction (Kalman filter) */
+        /* ADAM: Draw Measurement (GPS) */
+        if(hasMeasurement)
+        {
+            glPushMatrix();
+                // Transform from World to (Predicted) Camera
+                Sophus::Matrix4f m_measured = camToWorld_measured.matrix().cast<float>();
+                glMultMatrixf((GLfloat*)m_measured.data());
+
+                // Draw Coordinate Axes
+                if(drawAxes) pangolin::glDrawAxis(0.5f);
+
+                // Draw Point for measurement
+                glBegin(GL_POINTS);
+                glPointSize(5.0);
+                glColor3f(1.0f,0.0f,0.0f);
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glEnd();
+
+                glBegin(GL_LINES);
+                // Draw Camera for visualization
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(0,0,0);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+
+                glVertex3f(sz*(width-1-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+
+                glVertex3f(sz*(0-cx)/fx,sz*(height-1-cy)/fy,sz);
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glVertex3f(sz*(0-cx)/fx,sz*(0-cy)/fy,sz);
+                glVertex3f(sz*(width-1-cx)/fx,sz*(0-cy)/fy,sz);
+
+                glEnd();
+
+            glPopMatrix();
+            
+        }
+        
+        /*END ADAM: Draw Measurement (GPS) */
+        
+
+        
+       /* ADAM: Draw Prediction (Kalman filter) */
         if(hasPrediction)
         {
             glPushMatrix();
@@ -389,7 +444,7 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 // Draw Point for measurement
                 glBegin(GL_POINTS);
                 glPointSize(5.0);
-                glColor3f(1.0f,0.0f,0.0f);
+                glColor3f(0.0f,1.0f,0.0f);
                 glVertex3f(0.0f, 0.0f, 0.0f);
                 glEnd();
 
