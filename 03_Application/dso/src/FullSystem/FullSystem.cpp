@@ -167,12 +167,14 @@ FullSystem::FullSystem()
 	mappingThread = boost::thread(&FullSystem::mappingLoop, this);
 	lastRefStopID=0;
 
-
-
-	minIdJetVisDebug = -1;
+        minIdJetVisDebug = -1;
 	maxIdJetVisDebug = -1;
 	minIdJetVisTracker = -1;
 	maxIdJetVisTracker = -1;
+        
+        // ADDED by ADAM
+        kalmanFilter.init(0,0,0,
+                          1.0,1.0,1.0);
 }
 
 FullSystem::~FullSystem()
@@ -832,9 +834,9 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
         if( (int)this->cameraPoses.size() > 0 && (int)this->cameraPoses.size() >= id)
         {
             printf("\nLoading Camera pose number %d\n\n", id);
-            shell->camToWorld_predicted = this->cameraPoses.at(id);
-            shell->hasPrediction = true;
-            initialCameraPose = shell->camToWorld_predicted;
+            shell->camToWorld_measured = this->cameraPoses.at(id);
+            shell->hasMeasurement = true;
+            initialCameraPose = shell->camToWorld_measured;
         }
 	shell->camToWorld = initialCameraPose;		// no lock required, as fh is not used anywhere yet.
         shell->aff_g2l = AffLight(0,0);
@@ -844,6 +846,16 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	fh->shell = shell;
 	allFrameHistory.push_back(shell);
 
+        // -------------------------- KALMAN FILTER ---------------------------
+        kalmanFilter.predict(1.0/25.0);
+        
+        
+        if(id % 1 == 0)
+        {
+            shell->camToWorld_predicted.translation() = Eigen::Vector3d::Random();
+            shell->hasPrediction = true;
+        }
+        
 
 	// =========================== make Images / derivatives etc. =========================
 	fh->ab_exposure = image->exposure_time;
@@ -915,7 +927,19 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 		}
 
 
-
+        // KALMAN FILTER, camera pose estimation is done, now do an update of the Kalman Filter:
+        //kalmanFilter.update(); // this will be the DSO update
+        
+        if(fh->shell->hasMeasurement)
+        {
+            Eigen::Vector2f measurement = Eigen::Vector2f::Zero();
+            measurement(0) = fh->shell->camToWorld_measured.translation()(0);
+            measurement(1) = fh->shell->camToWorld_measured.translation()(1);
+            kalmanFilter.update(measurement); // this will be the GPS update
+        }
+        
+        fh->shell->camToWorld_predicted = kalmanFilter.getStateAsSE3();
+        
 
         for(IOWrap::Output3DWrapper* ow : outputWrapper)
             ow->publishCamPose(fh->shell, &Hcalib);

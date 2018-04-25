@@ -40,6 +40,10 @@
 #include "OptimizationBackend/EnergyFunctional.h"
 #include "FullSystem/PixelSelector2.h"
 
+// ADDITION BY ADAM 24. April 2018, 23:08 - Added KalmanFilter
+#include "util/KalmanFilter.h"
+
+
 #include <math.h>
 
 namespace dso
@@ -58,6 +62,8 @@ class CoarseInitializer;
 struct ImmaturePointTemporaryResidual;
 class ImageAndExposure;
 class CoarseDistanceMap;
+
+class KalmanFilter; // (Addition by ADAM)
 
 class EnergyFunctional;
 
@@ -166,7 +172,8 @@ public:
 private:
 
 	CalibHessian Hcalib;
-        std::vector<SE3> cameraPoses;
+        std::vector<SE3> cameraPoses; // ADDED by Adam
+        KalmanFilter kalmanFilter;
 
 
 
