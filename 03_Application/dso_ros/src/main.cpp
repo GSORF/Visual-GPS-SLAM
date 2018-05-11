@@ -25,6 +25,7 @@
 
 
 
+#include <thread>
 #include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -36,6 +37,8 @@
 #include "util/Undistort.h"
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
+
+#include "util/UDPServer.h"
 
 
 #include <ros/ros.h>
@@ -49,14 +52,13 @@
 std::string calib = "";
 std::string vignetteFile = "";
 std::string gammaFile = "";
+std::string rosTopic = "";
 bool useSampleOutput=false;
 
 using namespace dso;
 
 void parseArgument(char* arg)
 {
-	printf("My output of ARG Survival EVOLVED!");
-	printf(arg);
 	int option;
 	char buf[1000];
 
@@ -128,7 +130,40 @@ void parseArgument(char* arg)
 		printf("loading gammaCalib from %s!\n", gammaFile.c_str());
 		return;
 	}
-
+        
+        if(1==sscanf(arg,"image:=%s",buf))
+	{
+		rosTopic = buf;
+		printf("ROS Topic set as %s!\n", rosTopic.c_str());
+		return;
+	}
+        
+        /*
+         Add feature to read in GPS measurements via UDP
+         */
+        if(1==sscanf(arg, "udp=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_useUDP = true;
+                printf("Using UDP Server!\n");
+            }
+            return;
+        }
+        
+        /*
+        Add feature to read in GPS measurements via UDP
+        */
+        if(1==sscanf(arg, "http=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_useHTTP = true;
+                printf("Using HTTP POST Requests!\n");
+            }
+            return;
+        }
+        
 	printf("could not parse argument \"%s\"!!\n", arg);
 }
 
@@ -137,12 +172,16 @@ void parseArgument(char* arg)
 
 FullSystem* fullSystem = 0;
 Undistort* undistorter = 0;
+IOWrap::SampleOutputWrapper* sampleOutput = 0;
+UDPServer* ptrUDPServer = 0;
 int frameID = 0;
+
+// ADDED by Adam
 
 void vidCb(const sensor_msgs::ImageConstPtr img)
 {
-	printf("New vidCb call");
-        printf("Height: %d, Width: %d, Stamp: %s", img->height, img->width, img->header.stamp);
+	//printf("New vidCb call");
+        //printf("Height: %d, Width: %d, Stamp: %s", img->height, img->width, img->header.stamp);
         
         cv_bridge::CvImagePtr cv_ptr;
         try
@@ -158,7 +197,7 @@ void vidCb(const sensor_msgs::ImageConstPtr img)
 	assert(cv_ptr->image.type() == CV_8U);
 	assert(cv_ptr->image.channels() == 1);
 
-	printf("ImageConstPtr->image.type() = %s", cv_ptr->image.type());
+	//printf("ImageConstPtr->image.type() = %s", cv_ptr->image.type());
 
 	if(setting_fullResetRequested)
 	{
@@ -168,6 +207,17 @@ void vidCb(const sensor_msgs::ImageConstPtr img)
 		fullSystem = new FullSystem();
 		fullSystem->linearizeOperation=false;
 		fullSystem->outputWrapper = wraps;
+                
+                if(setting_useUDP)
+                {
+                    fullSystem->setUDPServer(*ptrUDPServer);
+                }
+                if(setting_useHTTP)
+                {
+                    fullSystem->setHTTPPOSTRequest(sampleOutput->httpPOSTRequest);
+                }
+                
+                
 	    if(undistorter->photometricUndist != 0)
 	    	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
 		setting_fullResetRequested=false;
@@ -223,25 +273,67 @@ int main( int argc, char** argv )
     fullSystem = new FullSystem();
     fullSystem->linearizeOperation=false;
 
+    // ********
+    // UDP Server for GPS measurements
+    // ********
+    
+    //if(setting_useUDP)
+    //{
+    // Create a server object to accept incoming client requests (i.e. the smartphone)
 
+    boost::asio::io_service io_service;
+    UDPServer udpServer(io_service);
+    fullSystem->setUDPServer(udpServer);
+    ptrUDPServer = &udpServer;
+
+    std::thread udpThread([&io_service]() { io_service.run(); });
+    //}
+    
+    
+    
+    
+       
+    
+    
     if(!disableAllDisplay)
 	    fullSystem->outputWrapper.push_back(new IOWrap::PangolinDSOViewer(
 	    		 (int)undistorter->getSize()[0],
 	    		 (int)undistorter->getSize()[1]));
 
-
+    
+    
     if(useSampleOutput)
-        fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
+    {
+        sampleOutput = new IOWrap::SampleOutputWrapper();
+        if(setting_useHTTP)
+        {
+            sampleOutput->httpPOSTRequest.setActive();
+            sampleOutput->httpPOSTRequest.addProject();
+        }
+        else
+        {
+            sampleOutput->httpPOSTRequest.setInactive();
+        }
+        fullSystem->setHTTPPOSTRequest(sampleOutput->httpPOSTRequest);
+        
+        fullSystem->outputWrapper.push_back(sampleOutput);
+    }
+        
 
 
     if(undistorter->photometricUndist != 0)
     	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
 
     ros::NodeHandle nh;
-    ros::Subscriber imgSub = nh.subscribe("camera/image_raw", 1, &vidCb);
+    ros::Subscriber imgSub = nh.subscribe(rosTopic, 1, &vidCb);
 
     ros::spin();
-
+    
+    //if(setting_useUDP)
+    //{
+    udpThread.join();
+    //}
+    
     for(IOWrap::Output3DWrapper* ow : fullSystem->outputWrapper)
     {
         ow->join();
