@@ -83,7 +83,7 @@ void PangolinDSOViewer::run()
 {
 	printf("START PANGOLIN!\n");
 
-	pangolin::CreateWindowAndBind("Main",2*w,2*h);
+	pangolin::CreateWindowAndBind("Visual GPS SLAM",2*w,2*h);
 	const int UI_WIDTH = 180;
 
 	glEnable(GL_DEPTH_TEST);

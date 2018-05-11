@@ -53,6 +53,7 @@
 #include "IOWrapper/Output3DWrapper.h"
 
 #include "util/ImageAndExposure.h"
+#include "util/UDPServer.h"
 
 #include <cmath>
 
@@ -172,9 +173,9 @@ FullSystem::FullSystem()
 	minIdJetVisTracker = -1;
 	maxIdJetVisTracker = -1;
         
-        // ADDED by ADAM
-        kalmanFilter.init(0,0,0,
-                          1.0,1.0,1.0);
+        
+        udpServer = NULL;
+        httpPostRequest = NULL;
 }
 
 FullSystem::~FullSystem()
@@ -208,6 +209,17 @@ FullSystem::~FullSystem()
 	delete coarseInitializer;
 	delete pixelSelector;
 	delete ef;
+        
+        /*
+        if(udpServer != NULL)
+        {
+            delete udpServer;
+        }
+        if(httpPostRequest != NULL)
+        {
+            delete httpPostRequest;
+        }
+        */
 }
 
 void FullSystem::setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH)
@@ -246,6 +258,15 @@ void FullSystem::setCameraPoses(std::vector<SE3> poses)
 {
     this->cameraPoses = poses;
 }
+void FullSystem::setUDPServer(UDPServer &udpServer)
+{
+    this->udpServer = &udpServer;
+}
+
+void FullSystem::setHTTPPOSTRequest(HTTPPOSTRequest &httpPostRequest)
+{
+    this->httpPostRequest = &httpPostRequest;
+}
 
 void FullSystem::printResult(std::string file)
 {
@@ -256,7 +277,7 @@ void FullSystem::printResult(std::string file)
 	myfile.open (file.c_str());
 	myfile << std::setprecision(15);
 
-	for(FrameShell* s : allFrameHistory)
+        for(FrameShell* s : allFrameHistory)
 	{
 		if(!s->poseValid) continue;
 
@@ -275,7 +296,7 @@ void FullSystem::printResult(std::string file)
 
 Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 {
-    printf("FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)\n");
+    if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::trackNewCoarse(FrameHessian* fh)\n");
     assert(allFrameHistory.size() > 0);
     // set pose initialization.
 
@@ -481,7 +502,7 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 
 void FullSystem::traceNewCoarse(FrameHessian* fh)
 {
-        printf("FUNCTION: FullSystem::traceNewCoarse(FrameHessian* fh)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::traceNewCoarse(FrameHessian* fh)\n");
 	boost::unique_lock<boost::mutex> lock(mapMutex);
 
 	int trace_total=0, trace_good=0, trace_oob=0, trace_out=0, trace_skip=0, trace_badcondition=0, trace_uninitialized=0;
@@ -821,23 +842,95 @@ void FullSystem::flagPointsForRemoval()
 
 void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 {
-
     if(isLost) return;
 	boost::unique_lock<boost::mutex> lock(trackMutex);
 
-        printf("ADDED NEW ACTIVE FRAME: FullSystem::addActiveFrame( ImageAndExposure* image, id=%d )\n", id);
+        if(!setting_debugout_runquiet) printf("ADDED NEW ACTIVE FRAME: FullSystem::addActiveFrame( ImageAndExposure* image, id=%d )\n", id);
 	// =========================== add into allFrameHistory =========================
 	FrameHessian* fh = new FrameHessian();
 	FrameShell* shell = new FrameShell();
-        //initialize camToWorld_predicted (SE3) with external information (GroundTruth, GPS, ...)
         SE3 initialCameraPose;
-        if( (int)this->cameraPoses.size() > 0 && (int)this->cameraPoses.size() >= id)
+        
+        if(setting_useCameraPoses)
         {
-            printf("\nLoading Camera pose number %d\n\n", id);
-            shell->camToWorld_measured = this->cameraPoses.at(id);
-            shell->hasMeasurement = true;
-            initialCameraPose = shell->camToWorld_measured;
+            // Load Measurements from external .csv file
+            if( (int)this->cameraPoses.size() > 0 && (int)this->cameraPoses.size() >= id)
+            {
+                printf("\nLoading Camera pose number %d\n\n", id);
+                shell->camToWorld_measured = this->cameraPoses.at(id).cast<double>();
+                shell->hasMeasurement = true;
+                //initialCameraPose = shell->camToWorld_measured;
+
+                if(!kalmanFilter.isInitialized())
+                {
+                    Eigen::Vector3d position = shell->camToWorld_measured.translation();
+                    kalmanFilter.init(position(0),position(1),position(2),
+                              1.0,1.0,1.0);
+                }
+                
+
+            }
         }
+        else if(setting_useUDP)
+        {
+            // Load Measurements from UDP communication
+            printf("\nGetting GPS Measurement number %d\n\n", id);
+            
+            double latitude = 0.0;
+            double longitude = 0.0;
+            double altitude = 0.0;
+            double accuracy = 0.0;
+            double bearing = 0.0;
+            double speed = 0.0;
+            int satellites = 0.0;
+            unsigned long timestamp = (unsigned long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            
+            Eigen::Vector3d ecef_position = Eigen::Vector3d::Zero();
+            
+            try
+            {
+                if(udpServer->getMeasurement(latitude, longitude, altitude, accuracy))
+                {
+                    std::cout << "Fix at:" << " Latitude=" << latitude << " Longitude=" << longitude << " Altitude=" << altitude << " Accuracy=" << accuracy << std::endl;
+                    if(setting_useHTTP)
+                    {
+                        // POST via HTTP to website:
+                        httpPostRequest->addRawGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
+                    }
+                    
+                    
+                    // Transformation from Lat Lon (Geodetic) to ECEF via WGS84 System
+                    latitude = (latitude)/(180.0) * M_PI; // in radian
+                    longitude = (longitude)/(180.0) * M_PI; // in radian
+                    
+                    kalmanFilter.geo_to_ecef( latitude, longitude, altitude, ecef_position(0), ecef_position(1), ecef_position(2));
+                    // Transform the result from Navigation frame to DSO frame
+                    Eigen::AngleAxis<double> fromECEF2DSO(-M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
+                    ecef_position = fromECEF2DSO.matrix() * ecef_position;
+                    
+                    // Create an SE3 Object from GPS measurement
+                    shell->camToWorld_measured.translation() = ecef_position;
+                    shell->hasMeasurement = true;
+
+
+                    
+                }
+                
+                if(!kalmanFilter.isInitialized())
+                {
+                    kalmanFilter.init(ecef_position(0),ecef_position(1),ecef_position(2),
+                              1.0,1.0,1.0);
+                }
+            }
+            catch (const std::exception& ex)
+            {
+                std::cerr << ex.what() << std::endl;
+            }
+
+            
+        }
+        
+        // ADDED by ADAM
 	shell->camToWorld = initialCameraPose;		// no lock required, as fh is not used anywhere yet.
         shell->aff_g2l = AffLight(0,0);
         shell->marginalizedAt = shell->id = allFrameHistory.size();
@@ -847,17 +940,19 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	allFrameHistory.push_back(shell);
 
         // -------------------------- KALMAN FILTER ---------------------------
-        kalmanFilter.predict(1.0/25.0);
-        
-        
-        if(id % 1 == 0)
+        if(setting_useCameraPoses)
         {
-            shell->camToWorld_predicted.translation() = Eigen::Vector3d::Random();
-            shell->hasPrediction = true;
+            kalmanFilter.predict(1.0/25.0);
+        }
+        else
+        {
+            kalmanFilter.predict( kalmanFilter.getDeltaTimeInSeconds() );
         }
         
 
-	// =========================== make Images / derivatives etc. =========================
+        
+        
+        // =========================== make Images / derivatives etc. =========================
 	fh->ab_exposure = image->exposure_time;
         fh->makeImages(image->image, &Hcalib);
 
@@ -869,7 +964,6 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 		// use initializer!
 		if(coarseInitializer->frameID<0)	// first frame set. fh is kept by coarseInitializer.
 		{
-
 			coarseInitializer->setFirst(&Hcalib, fh);
 		}
 		else if(coarseInitializer->trackFrame(fh, outputWrapper))	// if SNAPPED
@@ -927,34 +1021,91 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 		}
 
 
-        // KALMAN FILTER, camera pose estimation is done, now do an update of the Kalman Filter:
-        //kalmanFilter.update(); // this will be the DSO update
+        // KALMAN FILTER:
+        // DSO just finished its camera pose estimation
+        // => now do an measurement update of the Kalman Filter:
+        Eigen::Vector3f measurementDSO = Eigen::Vector3f::Zero();
+        measurementDSO(0) = fh->shell->camToWorld.translation()(0);
+        measurementDSO(1) = fh->shell->camToWorld.translation()(1);
+        measurementDSO(2) = fh->shell->camToWorld.translation()(2);
+        Eigen::Quaternionf orientationDSO = Eigen::Quaternionf::Identity();
+        orientationDSO = fh->shell->camToWorld.so3().unit_quaternion().cast<float>();
         
-        if(fh->shell->hasMeasurement)
+        // Correction Step DSO:
+        if(setting_useCameraPoses)
         {
-            Eigen::Vector2f measurement = Eigen::Vector2f::Zero();
-            measurement(0) = fh->shell->camToWorld_measured.translation()(0);
-            measurement(1) = fh->shell->camToWorld_measured.translation()(1);
-            kalmanFilter.update(measurement); // this will be the GPS update
+            kalmanFilter.updateDSO(measurementDSO, orientationDSO, 1.0f / 25.0f); // this is the DSO correction step
+        }
+        else
+        {
+            kalmanFilter.updateDSO(measurementDSO, orientationDSO,  kalmanFilter.getDeltaTimeInSeconds() );
         }
         
+        // Correction Step GPS:
+        if(fh->shell->hasMeasurement)
+        {
+            Eigen::Vector3f measurementGPS = Eigen::Vector3f::Zero();
+            measurementGPS(0) = fh->shell->camToWorld_measured.translation()(0);
+            measurementGPS(1) = fh->shell->camToWorld_measured.translation()(1);
+            measurementGPS(2) = fh->shell->camToWorld_measured.translation()(2);
+            kalmanFilter.updateGPS(measurementGPS); // this is the GPS correction step
+            
+        }
+        
+        
         fh->shell->camToWorld_predicted = kalmanFilter.getStateAsSE3();
+        fh->shell->hasPrediction = true;
+        
+        // *******************************
+        // Retrieve geodetic (lat, lon, alt) position from prediction
+        //********************************
+        try
+        {
+            
+            double latitude = 0.0;
+            double longitude = 0.0;
+            double altitude = 0.0;
+            double accuracy = 0.0;
+            double bearing = 0.0;
+            double speed = 0.0;
+            int satellites = 0.0;
+            unsigned long timestamp = (unsigned long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+            Eigen::Vector3d ecef_filtered_position = fh->shell->camToWorld_predicted.translation();
+            Eigen::AngleAxis<double> fromDSO2ECEF(M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
+            ecef_filtered_position = fromDSO2ECEF.matrix() * ecef_filtered_position;
+                    
+            // Transform filtered pose back from ECEF to lat lon
+            kalmanFilter.ecef_to_geo(ecef_filtered_position(0),ecef_filtered_position(1),ecef_filtered_position(2), latitude, longitude, altitude);
+            latitude = (latitude)/(M_PI)*180.0;
+            longitude = (longitude)/(M_PI)*180.0;
+            std::cout << "Recovered geodetic: " << latitude << ", " << longitude << std::endl;
+
+            if(setting_useHTTP)
+            {    
+                // POST filtered GPS to server
+                httpPostRequest->addFilteredGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+        }
+        // Update internal timestamp of the kalman filter to current one
+        kalmanFilter.setLastTimestampToCurrent();
         
 
         for(IOWrap::Output3DWrapper* ow : outputWrapper)
             ow->publishCamPose(fh->shell, &Hcalib);
 
-
-
-
-		lock.unlock();
-		deliverTrackedFrame(fh, needToMakeKF);
-		return;
+            lock.unlock();
+            deliverTrackedFrame(fh, needToMakeKF);
+            return;
 	}
 }
 void FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)
 {
-        printf("FUNCTION: FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)\n");
 
 
 	if(linearizeOperation)
@@ -996,7 +1147,7 @@ void FullSystem::deliverTrackedFrame(FrameHessian* fh, bool needKF)
 
 void FullSystem::mappingLoop()
 {
-        printf("FUNCTION: FullSystem::mappingLoop()\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::mappingLoop()\n");
 	boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 
 	while(runMapping)
@@ -1068,7 +1219,7 @@ void FullSystem::mappingLoop()
 
 void FullSystem::blockUntilMappingIsFinished()
 {
-        printf("FUNCTION: FullSystem::blockUntilMappingIsFinished()\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::blockUntilMappingIsFinished()\n");
 	boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 	runMapping = false;
 	trackedFrameSignal.notify_all();
@@ -1080,7 +1231,7 @@ void FullSystem::blockUntilMappingIsFinished()
 
 void FullSystem::makeNonKeyFrame( FrameHessian* fh)
 {
-        printf("FUNCTION: FullSystem::makeNonKeyFrame( FrameHessian* fh)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::makeNonKeyFrame( FrameHessian* fh)\n");
 	// needs to be set by mapping thread. no lock required since we are in mapping thread.
 	{
 		boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1095,7 +1246,7 @@ void FullSystem::makeNonKeyFrame( FrameHessian* fh)
 
 void FullSystem::makeKeyFrame( FrameHessian* fh)
 {
-        printf("FUNCTION: FullSystem::makeKeyFrame( FrameHessian* fh)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::makeKeyFrame( FrameHessian* fh)\n");
 	// needs to be set by mapping thread
 	{
 		boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
@@ -1254,7 +1405,7 @@ void FullSystem::makeKeyFrame( FrameHessian* fh)
 
 void FullSystem::initializeFromInitializer(FrameHessian* newFrame)
 {
-        printf("FUNCTION: FullSystem::initializeFromInitializer(FrameHessian* newFrame)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: FullSystem::initializeFromInitializer(FrameHessian* newFrame)\n");
 	boost::unique_lock<boost::mutex> lock(mapMutex);
 
 	// add firstframe.

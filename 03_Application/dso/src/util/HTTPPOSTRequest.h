@@ -19,6 +19,10 @@
 #include <sstream>
 #include <string>
 
+#include <chrono>
+#include <boost/date_time.hpp>
+
+
 #ifndef HTTPPOSTREQUEST_H
 #define HTTPPOSTREQUEST_H
 
@@ -48,6 +52,19 @@ public:
         this->timestamp = 0;
         this->active = true;
         
+        // Create new project:
+        double now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        this->projectName = std::to_string((unsigned long)now);
+        this->projectDescription = "DSO Project from computer \"" + boost::asio::ip::host_name() + "\"";
+        std::cout << "PROJECT NAME=" << this->projectName << " - PROJECT DESCRIPTION=" << this->projectDescription << std::endl;
+        std::cout << "TIMESTAMP = " << now;
+        
+    }
+    inline void initProject(std::string name, std::string description)
+    {
+        this->projectName = name;
+        this->projectDescription = description;
+        
     }
     
     inline void sendPOST(std::string message)
@@ -58,7 +75,7 @@ public:
         
         //message = "action=addproject&projectname=1524088429&projectdescription=HelloWorld";
         
-        std::cout << "SENT POST REQUEST with message: " << message << std::endl;
+        //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
         // HTTP POST request:
         streamPOST.connect(this->host, this->protocol);
@@ -74,31 +91,33 @@ public:
         streamPOST << "\r\n";
         streamPOST << message;
         streamPOST.flush();
-        std::cout << streamPOST.rdbuf() << std::endl;
+        
+        //std::cout << streamPOST.rdbuf() << std::endl;
         
     }
     
-    inline void addProject(std::string name, std::string description)
+    
+    inline void addProject()
     {
         // Example: "action=addproject&projectname=32452351&projectdescription=HelloWorld"
         
         std::string message;
         
         message += "action=addproject";
-        message += "&projectname=" + name;
-        message += "&projectdescription=" + urlencode(description);
+        message += "&projectname=" + this->projectName;
+        message += "&projectdescription=" + urlencode(this->projectDescription);
         
         sendPOST(message);
     }
     
-    inline void addFilteredGPS(std::string name, long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
+    inline void addFilteredGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addfilteredgps&projectname=" + txtProjectName.value + "&gpsfilteredtimestamp=" + txtFilteredGPSTimestamp.value + "&gpsfilteredlatitude=" + txtFilteredGPSLatitude.value + "&gpsfilteredlongitude=" + txtFilteredGPSLongitude.value + "&gpsfilteredaccuracy=" + txtFilteredGPSAccuracy.value + "&gpsfilteredbearing=" + txtFilteredGPSBearing.value + "&gpsfilteredspeed=" + txtFilteredGPSSpeed.value + "&gpsfilteredaltitude=" + txtFilteredGPSAltitude.value + "&gpsfilteredsatellites=" + txtFilteredGPSSatellites.value;"
         
         std::string message;
         
         message += "action=addfilteredgps";
-        message += "&projectname=" + name;
+        message += "&projectname=" + this->projectName;
         message += "&gpsfilteredtimestamp=" + std::to_string(timestamp);
         message += "&gpsfilteredlatitude=" + std::to_string(latitude);
         message += "&gpsfilteredlongitude=" + std::to_string(longitude);
@@ -111,14 +130,14 @@ public:
         sendPOST(message);
     }
     
-    inline void addRawGPS(std::string name, long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
+    inline void addRawGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addrawgps&projectname=" + txtProjectName.value + "&gpsrawtimestamp=" + txtRawGPSTimestamp.value + "&gpsrawlatitude=" + txtRawGPSLatitude.value + "&gpsrawlongitude=" + txtRawGPSLongitude.value + "&gpsrawaccuracy=" + txtRawGPSAccuracy.value + "&gpsrawbearing=" + txtRawGPSBearing.value + "&gpsrawspeed=" + txtRawGPSSpeed.value + "&gpsrawaltitude=" + txtRawGPSAltitude.value + "&gpsrawsatellites=" + txtRawGPSSatellites.value"
         
         std::string message;
         
         message += "action=addrawgps";
-        message += "&projectname=" + name;
+        message += "&projectname=" + this->projectName;
         message += "&gpsrawtimestamp=" + std::to_string(timestamp);
         message += "&gpsrawlatitude=" + std::to_string(latitude);
         message += "&gpsrawlongitude=" + std::to_string(longitude);
@@ -131,14 +150,14 @@ public:
         sendPOST(message);
     }
     
-    inline void addCameraPose(std::string name, long timestamp, Eigen::Vector3d translation, Eigen::Quaterniond quaternion)
+    inline void addCameraPose(unsigned long timestamp, Eigen::Vector3d translation, Eigen::Quaterniond quaternion)
     {
         // Example: "action=addpose&projectname=" + txtProjectName.value + "&posetimestamp=" + txtPoseTimestamp.value + "&posex=" + txtPoseX.value + "&posey=" + txtPoseY.value + "&posez=" + txtPoseZ.value + "&poseqw=" + txtPoseQW.value + "&poseqx=" + txtPoseQX.value + "&poseqy=" + txtPoseQY.value + "&poseqz=" + txtPoseQZ.value"
         
         std::string message;
         
         message += "action=addpose";
-        message += "&projectname=" + name;
+        message += "&projectname=" + this->projectName;
         message += "&posetimestamp=" + std::to_string(timestamp);
         message += "&posex=" + std::to_string( (double)translation[0] );
         message += "&posey=" + std::to_string( (double)translation[1] );
@@ -152,14 +171,14 @@ public:
         sendPOST(message);
     }
     
-    inline void addPointCloud(std::string name, std::string pointString)
+    inline void addPointCloud(std::string pointString)
     {
         // Example: "action=addpointcloud&projectname=" + txtProjectName.value + "&pointstring=" + txtPointCloud.value"
         
         std::string message;
         
         message += "action=addpointcloud";
-        message += "&projectname=" + name;
+        message += "&projectname=" + this->projectName;
         message += "&pointstring=" + pointString;
         
         sendPOST(message);
@@ -167,7 +186,7 @@ public:
     
     inline void addEverything(std::string name,
                               std::string description,
-                              long timestamp,
+                              unsigned long timestamp,
                               double filteredLatitude, double filteredLongitude, double filteredAccuracy, double filteredBearing, double filteredSpeed, double filteredAltitude, int filteredSatellites,
                               double rawLatitude, double rawLongitude, double rawAccuracy, double rawBearing, double rawSpeed, double rawAltitude, int rawSatellites,
                               Eigen::Vector3d translation, Eigen::Quaterniond quaternion,
@@ -189,8 +208,8 @@ public:
         std::string message;
         
         message += "action=addeverything";
-        message += "&projectname=" + name;
-        message += "&projectdescription=" + urlencode(description);
+        message += "&projectname=" + this->projectName;
+        message += "&projectdescription=" + urlencode(this->projectDescription);
         
         message += "&gpsfilteredtimestamp=" + std::to_string(timestamp);
         message += "&gpsfilteredlatitude=" + std::to_string(filteredLatitude);
@@ -272,6 +291,8 @@ public:
     
     
 /*
+ * EXAMPLE HTTP REQUEST (note that key-value pairs are separated by a new line)
+ * 
 Content-Length	
 87
 Content-type	
@@ -279,7 +300,7 @@ application/x-www-form-urlencoded
 Host	
 master.kalisz.co
 Referer	
-https://master.kalisz.co/demo/admin.php
+https://master.kalisz.co/someURL/foo/bar.php
 User-Agent	
 Mozilla/5.0 (X11; Ubuntu; Linu…) Gecko/20100101 Firefox/59.0
 */
@@ -295,8 +316,11 @@ protected:
     std::string protocol;
     bool active; // Determines if POST requests are being sent
     
+    std::string projectName;
+    std::string projectDescription;
+    
     // TODO: Dummy timestamp
-    long timestamp;
+    unsigned long timestamp;
 };
 
 

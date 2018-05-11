@@ -540,7 +540,7 @@ bool CoarseTracker::trackNewestCoarse(
 		Vec5 minResForAbort,
 		IOWrap::Output3DWrapper* wrap)
 {
-        printf("FUNCTION: CoarseTracker::trackNewestCoarse(FrameHessian* fh)\n");
+        if(!setting_debugout_runquiet) printf("FUNCTION: CoarseTracker::trackNewestCoarse(FrameHessian* fh)\n");
 	debugPlot = setting_render_displayCoarseTrackingFull;
 	debugPrint = false;
 

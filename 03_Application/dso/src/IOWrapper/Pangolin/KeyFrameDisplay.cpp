@@ -247,8 +247,8 @@ bool KeyFrameDisplay::refreshPC(bool canRefresh, float scaledTH, float absTH, in
 			int dx = patternP[pnt][0];
 			int dy = patternP[pnt][1];
                         
-                        std::cout << "PANGOLIN: dx=" << dx << std::endl;
-                        std::cout << "PANGOLIN: dy=" << dy << std::endl;
+                        if(!setting_debugout_runquiet) std::cout << "PANGOLIN: dx=" << dx << std::endl;
+                        if(!setting_debugout_runquiet) std::cout << "PANGOLIN: dy=" << dy << std::endl;
 
 			tmpVertexBuffer[vertexBufferNumPoints][0] = ((originalInputSparse[i].u+dx)*fxi + cxi) * depth;
 			tmpVertexBuffer[vertexBufferNumPoints][1] = ((originalInputSparse[i].v+dy)*fyi + cyi) * depth;
@@ -387,6 +387,8 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 Sophus::Matrix4f m_measured = camToWorld_measured.matrix().cast<float>();
                 glMultMatrixf((GLfloat*)m_measured.data());
 
+                std::cout << "PANGOLIN: drawingMeasurement(red), at: " << camToWorld_measured.translation() << std::endl;
+                
                 // Draw Coordinate Axes
                 if(drawAxes) pangolin::glDrawAxis(0.5f);
 
@@ -438,6 +440,8 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 Sophus::Matrix4f m_predicted = camToWorld_predicted.matrix().cast<float>();
                 glMultMatrixf((GLfloat*)m_predicted.data());
 
+                std::cout << "PANGOLIN: drawingPrediction(green), at: " << camToWorld_predicted.translation() << std::endl;
+                
                 // Draw Coordinate Axes
                 if(drawAxes) pangolin::glDrawAxis(0.5f);
 

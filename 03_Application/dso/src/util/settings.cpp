@@ -31,6 +31,10 @@ namespace dso
 {
 int pyrLevelsUsed = PYR_LEVELS;
 
+// Added by ADAM:
+bool setting_useCameraPoses = false;
+bool setting_useHTTP = false;
+bool setting_useUDP = false;
 
 /* Parameters controlling when KF's are taken */
 float setting_keyframesPerSecond = 0;   // if !=0, takes a fixed number of KF per second.
@@ -309,6 +313,8 @@ int staticPatternPadding[10] = {
 		2,
 		4
 };
+
+
 
 
 }

@@ -369,12 +369,13 @@ private:
 	{
 		std::ifstream poseReader;
 		poseReader.open(this->posesfile.c_str());
+                	
                 float fps = 1.0f / 25.0f;
                 int index = 0;
 		while(!poseReader.eof() && poseReader.good())
 		{
 			std::string line;
-			char buf[1000];
+                        char buf[1000];
 			poseReader.getline(buf, 1000);
                         
                         /* 

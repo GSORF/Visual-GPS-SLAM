@@ -36,9 +36,6 @@
 
 // For outputting a POST request
 #include "util/HTTPPOSTRequest.h"
-#include <chrono>
-#include <boost/asio.hpp>
-#include <boost/date_time.hpp>
 
 namespace dso
 {
@@ -62,8 +59,6 @@ public:
         
         // HTTP POST Request
         dso::HTTPPOSTRequest httpPOSTRequest;
-        std::string projectName;
-        std::string projectDescription;
         
         inline SampleOutputWrapper()
         {
@@ -72,20 +67,9 @@ public:
             pointCloudOBJ.open("/home/akp/cameraPointcloud.obj");
             pointCloudOBJ << "o DSO_Pointcloud\n";
 
-            // Create new project:
-            double now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            projectName = std::to_string((unsigned long)now);
-            projectDescription = "DSO Project from computer \"" + boost::asio::ip::host_name() + "\"";
-            std::cout << "PROJECT NAME=" << projectName << " - PROJECT DESCRIPTION=" << projectDescription << std::endl;
-            std::cout << "TIMESTAMP = " << now;
-            
-            
-            
             // POST to Webserver:
             httpPOSTRequest.init("master.kalisz.co", "http");
-            httpPOSTRequest.setInactive(); // TODO ADAM: add possibility to set from main
-            httpPOSTRequest.addProject(projectName, projectDescription);
-   
+            
             printf("OUT: Created SampleOutputWrapper\n");
         }
 
@@ -208,9 +192,10 @@ public:
                     //if(maxWrite==0) break;
                 }
                 
-                httpPOSTRequest.addPointCloud(this->projectName, pointCloudString);
-            
-                
+                if(pointCloudString != "")
+                {
+                    httpPOSTRequest.addPointCloud(pointCloudString);
+                }
                 
             }
             
@@ -229,9 +214,6 @@ public:
             long timestamp = frame->id * (1.0 / 25.0) * 1000.0;
             posesCSV << timestamp << ",";
             
-            // TODO Adam: change back to camToWorld (not predicted), because this is only for testing if mapping works
-            // Above TODO done, but continue testing!!!
-            
             SE3 matrix = frame->camToWorld;
             Eigen::Vector3d translation = matrix.translation().transpose().cast<double>();
             Eigen::Quaterniond quaternion = matrix.so3().unit_quaternion().cast<double>();
@@ -247,7 +229,7 @@ public:
                     << quaternion.z() << "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
-            httpPOSTRequest.addCameraPose(this->projectName, timestamp, matrix.translation(), matrix.unit_quaternion() );
+            httpPOSTRequest.addCameraPose(timestamp, matrix.translation(), matrix.unit_quaternion() );
             
             /*
             printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",

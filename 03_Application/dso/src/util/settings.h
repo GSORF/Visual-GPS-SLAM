@@ -50,6 +50,11 @@ namespace dso
 #define PYR_LEVELS 6
 extern int pyrLevelsUsed;
 
+// Added by ADAM:
+extern bool setting_useCameraPoses;
+extern bool setting_useHTTP;
+extern bool setting_useUDP;
+
 
 
 extern float setting_keyframesPerSecond;
@@ -109,8 +114,6 @@ extern float setting_reTrackThreshold;
 extern int   setting_minGoodActiveResForMarg;
 extern int   setting_minGoodResForMarg;
 extern int   setting_minInlierVotesForMarg;
-
-
 
 
 extern int setting_photometricCalibration;
@@ -203,8 +206,6 @@ void handleKey(char k);
 extern int staticPattern[10][40][2];
 extern int staticPatternNum[10];
 extern int staticPatternPadding[10];
-
-
 
 
 //#define patternNum staticPatternNum[setting_pattern]

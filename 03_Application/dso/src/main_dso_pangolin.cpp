@@ -50,6 +50,8 @@
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
 
+#include "util/UDPServer.h"
+
 
 std::string vignette = "";
 std::string gammaCalib = "";
@@ -348,7 +350,7 @@ void parseArgument(char* arg)
 			setting_photometricCalibration = 0;
 			setting_affineOptModeA = -1; //-1: fix. >=0: optimize (with prior, if > 0).
 			setting_affineOptModeB = -1; //-1: fix. >=0: optimize (with prior, if > 0).
-            setting_minGradHistAdd=3;
+                        setting_minGradHistAdd=3;
 		}
 		return;
 	}
@@ -357,10 +359,38 @@ void parseArgument(char* arg)
          */
 	if(1==sscanf(arg,"poses=%s",buf))
 	{
-		poses = buf;
-		printf("loading additional camera poses from %s!\n", poses.c_str());
-		return;
+            poses = buf;
+            printf("loading additional camera poses from %s!\n", poses.c_str());
+            setting_useCameraPoses = true;
+            return;
 	}
+        
+        /*
+         Add feature to read in GPS measurements via UDP
+         */
+        if(1==sscanf(arg, "udp=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_useUDP = true;
+            }
+            return;
+        }
+        
+        /*
+        Add feature to read in GPS measurements via UDP
+        */
+        if(1==sscanf(arg, "http=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_useHTTP = true;
+                
+            }
+            return;
+        }
+        
+       
 	printf("could not parse argument \"%s\"!!!!\n", arg);
 }
 
@@ -438,8 +468,20 @@ int main( int argc, char** argv )
     fullSystem->setCameraPoses(reader->getCameraPoses());
 
 
+    // ********
+    // UDP Server for GPS measurements
+    // ********
+    //if(setting_useUDP)
+    //{
+        // Create a server object to accept incoming client requests (i.e. the smartphone)
+        boost::asio::io_service io_service;
+        UDPServer udpServer(io_service);
+        fullSystem->setUDPServer(udpServer);
 
-
+        std::thread udpThread([&io_service]() { io_service.run(); });
+    //}
+        
+    
 
     IOWrap::PangolinDSOViewer* viewer = 0;
 	if(!disableAllDisplay)
@@ -448,13 +490,27 @@ int main( int argc, char** argv )
         fullSystem->outputWrapper.push_back(viewer);
     }
 
-
+    IOWrap::SampleOutputWrapper* sampleOutput = 0;
 
     if(useSampleOutput)
-        fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
+    {
+        sampleOutput = new IOWrap::SampleOutputWrapper();
+        if(setting_useHTTP)
+        {
+            sampleOutput->httpPOSTRequest.setActive();
+            sampleOutput->httpPOSTRequest.addProject();
+        }
+        else
+        {
+            sampleOutput->httpPOSTRequest.setInactive();
+        }
+        fullSystem->setHTTPPOSTRequest(sampleOutput->httpPOSTRequest);
+        
+        fullSystem->outputWrapper.push_back(sampleOutput);
+    }
+        
 
-
-
+    
 
     // START of main loop (runs on worker thread)
     // to make MacOS happy: run this in dedicated thread -- and use this one to run the GUI.
@@ -557,6 +613,9 @@ int main( int argc, char** argv )
             //
             //*****************************************************
             
+            // Poll for new GPS poses:
+            //io_service.poll();
+        
             if(!skipFrame) fullSystem->addActiveFrame(img, i);
 
             // Free memory reserved for a pointer to the image object
@@ -584,6 +643,16 @@ int main( int argc, char** argv )
 
                     fullSystem->outputWrapper = wraps;
 
+                    if(setting_useUDP)
+                    {
+                        fullSystem->setUDPServer(udpServer);
+                    }
+                    if(setting_useHTTP)
+                    {
+                        fullSystem->setHTTPPOSTRequest(sampleOutput->httpPOSTRequest);
+                    }
+
+                    
                     setting_fullResetRequested=false;
                 }
             }
@@ -652,21 +721,21 @@ int main( int argc, char** argv )
         viewer->run();
 
     runthread.join();
+    udpThread.join();
+    
+    for(IOWrap::Output3DWrapper* ow : fullSystem->outputWrapper)
+    {
+            ow->join();
+            delete ow;
+    }
 
-	for(IOWrap::Output3DWrapper* ow : fullSystem->outputWrapper)
-	{
-		ow->join();
-		delete ow;
-	}
 
+    printf("DELETE FULLSYSTEM!\n");
+    delete fullSystem;
 
+    printf("DELETE READER!\n");
+    delete reader;
 
-	printf("DELETE FULLSYSTEM!\n");
-	delete fullSystem;
-
-	printf("DELETE READER!\n");
-	delete reader;
-
-	printf("EXIT NOW!\n");
-	return 0;
+    printf("EXIT NOW!\n");
+    return 0;
 }

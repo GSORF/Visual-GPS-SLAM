@@ -42,6 +42,8 @@
 
 // ADDITION BY ADAM 24. April 2018, 23:08 - Added KalmanFilter
 #include "util/KalmanFilter.h"
+// ADDITION BY ADAM 10. May 2018, 01:34 - Referenced HTTP Post Request to FullSystem
+#include "util/HTTPPOSTRequest.h"
 
 
 #include <math.h>
@@ -64,6 +66,7 @@ class ImageAndExposure;
 class CoarseDistanceMap;
 
 class KalmanFilter; // (Addition by ADAM)
+class UDPServer; // (Addition by ADAM)
 
 class EnergyFunctional;
 
@@ -167,14 +170,20 @@ public:
 
 	void setGammaFunction(float* BInv);
 	void setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH);
-        void setCameraPoses(std::vector<SE3> poses);
+        void setCameraPoses(std::vector<SE3> poses); // ADDED by ADAM
+        void setUDPServer(UDPServer &udpServer);
+        void setHTTPPOSTRequest(HTTPPOSTRequest &httpPostRequest);
 
 private:
 
 	CalibHessian Hcalib;
-        std::vector<SE3> cameraPoses; // ADDED by Adam
+        
+        // ADDED by Adam
+        std::vector<SE3> cameraPoses;
         KalmanFilter kalmanFilter;
-
+        UDPServer *udpServer;
+        HTTPPOSTRequest *httpPostRequest;
+        
 
 
 	// opt single point
