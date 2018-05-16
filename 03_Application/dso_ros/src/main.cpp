@@ -52,7 +52,7 @@
 std::string calib = "";
 std::string vignetteFile = "";
 std::string gammaFile = "";
-std::string rosTopic = "";
+std::string rosTopic = "zed/left/image_rect_color";
 bool useSampleOutput=false;
 
 using namespace dso;
@@ -131,7 +131,7 @@ void parseArgument(char* arg)
 		return;
 	}
         
-        if(1==sscanf(arg,"image:=%s",buf))
+        if(1==sscanf(arg,"topic=%s",buf))
 	{
 		rosTopic = buf;
 		printf("ROS Topic set as %s!\n", rosTopic.c_str());
@@ -286,6 +286,7 @@ int main( int argc, char** argv )
     fullSystem->setUDPServer(udpServer);
     ptrUDPServer = &udpServer;
 
+    //io_service.run();
     std::thread udpThread([&io_service]() { io_service.run(); });
     //}
     
@@ -331,7 +332,7 @@ int main( int argc, char** argv )
     
     //if(setting_useUDP)
     //{
-    udpThread.join();
+    //udpThread.join();
     //}
     
     for(IOWrap::Output3DWrapper* ow : fullSystem->outputWrapper)
