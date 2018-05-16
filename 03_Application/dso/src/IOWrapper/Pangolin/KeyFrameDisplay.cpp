@@ -387,7 +387,7 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 Sophus::Matrix4f m_measured = camToWorld_measured.matrix().cast<float>();
                 glMultMatrixf((GLfloat*)m_measured.data());
 
-                std::cout << "PANGOLIN: drawingMeasurement(red), at: " << camToWorld_measured.translation() << std::endl;
+                //std::cout << "PANGOLIN: drawingMeasurement(red), at: " << camToWorld_measured.translation() << std::endl;
                 
                 // Draw Coordinate Axes
                 if(drawAxes) pangolin::glDrawAxis(0.5f);
@@ -440,7 +440,7 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color, float sizeFactor, b
                 Sophus::Matrix4f m_predicted = camToWorld_predicted.matrix().cast<float>();
                 glMultMatrixf((GLfloat*)m_predicted.data());
 
-                std::cout << "PANGOLIN: drawingPrediction(green), at: " << camToWorld_predicted.translation() << std::endl;
+                //std::cout << "PANGOLIN: drawingPrediction(green), at: " << camToWorld_predicted.translation() << std::endl;
                 
                 // Draw Coordinate Axes
                 if(drawAxes) pangolin::glDrawAxis(0.5f);

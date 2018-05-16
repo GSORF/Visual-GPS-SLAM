@@ -874,7 +874,7 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
         else if(setting_useUDP)
         {
             // Load Measurements from UDP communication
-            printf("\nGetting GPS Measurement number %d\n\n", id);
+            //printf("\nGetting GPS Measurement number %d\n\n", id);
             
             double latitude = 0.0;
             double longitude = 0.0;
@@ -887,47 +887,36 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
             
             Eigen::Vector3d ecef_position = Eigen::Vector3d::Zero();
             
-            try
+            if(udpServer->getMeasurement(latitude, longitude, altitude, accuracy))
             {
-                if(udpServer->getMeasurement(latitude, longitude, altitude, accuracy))
+                std::cout << "Fix at:" << " Latitude=" << latitude << " Longitude=" << longitude << " Altitude=" << altitude << " Accuracy=" << accuracy << std::endl;
+                if(setting_useHTTP)
                 {
-                    std::cout << "Fix at:" << " Latitude=" << latitude << " Longitude=" << longitude << " Altitude=" << altitude << " Accuracy=" << accuracy << std::endl;
-                    if(setting_useHTTP)
-                    {
-                        // POST via HTTP to website:
-                        httpPostRequest->addRawGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
-                    }
-                    
-                    
-                    // Transformation from Lat Lon (Geodetic) to ECEF via WGS84 System
-                    latitude = (latitude)/(180.0) * M_PI; // in radian
-                    longitude = (longitude)/(180.0) * M_PI; // in radian
-                    
-                    kalmanFilter.geo_to_ecef( latitude, longitude, altitude, ecef_position(0), ecef_position(1), ecef_position(2));
-                    // Transform the result from Navigation frame to DSO frame
-                    Eigen::AngleAxis<double> fromECEF2DSO(-M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
-                    ecef_position = fromECEF2DSO.matrix() * ecef_position;
-                    
-                    // Create an SE3 Object from GPS measurement
-                    shell->camToWorld_measured.translation() = ecef_position;
-                    shell->hasMeasurement = true;
-
-
-                    
+                    // POST via HTTP to website:
+                    httpPostRequest->addRawGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
                 }
-                
+
+
+                // Transformation from Lat Lon (Geodetic) to ECEF via WGS84 System
+                latitude = (latitude)/(180.0) * M_PI; // in radian
+                longitude = (longitude)/(180.0) * M_PI; // in radian
+
+                kalmanFilter.geo_to_ecef( latitude, longitude, altitude, ecef_position(0), ecef_position(1), ecef_position(2));
+                // Transform the result from Navigation frame to DSO frame
+                Eigen::AngleAxis<double> fromECEF2DSO(-M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
+                ecef_position = fromECEF2DSO.matrix() * ecef_position;
+
+                // Create an SE3 Object from GPS measurement
+                shell->camToWorld_measured.translation() = ecef_position;
+                shell->hasMeasurement = true;
+
+
                 if(!kalmanFilter.isInitialized())
                 {
                     kalmanFilter.init(ecef_position(0),ecef_position(1),ecef_position(2),
                               1.0,1.0,1.0);
                 }
             }
-            catch (const std::exception& ex)
-            {
-                std::cerr << ex.what() << std::endl;
-            }
-
-            
         }
         
         // ADDED by ADAM
@@ -939,15 +928,22 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	fh->shell = shell;
 	allFrameHistory.push_back(shell);
 
-        // -------------------------- KALMAN FILTER ---------------------------
-        if(setting_useCameraPoses)
+        // ----------------- KALMAN FILTER PREDICTION STEP ---------------------------
+        if(kalmanFilter.isInitialized())
         {
-            kalmanFilter.predict(1.0/25.0);
+            if(setting_useCameraPoses)
+            {
+                kalmanFilter.predict(1.0/25.0);
+            }
+            else
+            {
+                kalmanFilter.predict( kalmanFilter.getDeltaTimeInSeconds() );
+            }
         }
-        else
-        {
-            kalmanFilter.predict( kalmanFilter.getDeltaTimeInSeconds() );
-        }
+
+        // ------------END OF KALMAN FILTER PREDICTION STEP ---------------------------
+        // -----  Continue with DSO as usual by performing pose estimation ------------
+
         
 
         
@@ -1030,70 +1026,95 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
         measurementDSO(2) = fh->shell->camToWorld.translation()(2);
         Eigen::Quaternionf orientationDSO = Eigen::Quaternionf::Identity();
         orientationDSO = fh->shell->camToWorld.so3().unit_quaternion().cast<float>();
-        
-        // Correction Step DSO:
-        if(setting_useCameraPoses)
+
+        // ----------------- KALMAN FILTER CORRECTION STEP (DSO) ---------------------------
+        if(kalmanFilter.isInitialized())
         {
-            kalmanFilter.updateDSO(measurementDSO, orientationDSO, 1.0f / 25.0f); // this is the DSO correction step
+            if(setting_useCameraPoses)
+            {
+                kalmanFilter.updateDSO(measurementDSO, orientationDSO, 1.0f / 25.0f); // this is the DSO correction step
+            }
+            else
+            {
+                kalmanFilter.updateDSO(measurementDSO, orientationDSO,  kalmanFilter.getDeltaTimeInSeconds() );
+            }
+
         }
-        else
+
+        // ------------END OF KALMAN FILTER CORRECTION STEP (DSO) ---------------------------
+
+
+
+
+        // ----------------- KALMAN FILTER CORRECTION STEP (GPS) ---------------------------
+        Eigen::Vector3f measurementGPS = Eigen::Vector3f::Zero();
+
+        if(kalmanFilter.isInitialized())
         {
-            kalmanFilter.updateDSO(measurementDSO, orientationDSO,  kalmanFilter.getDeltaTimeInSeconds() );
+            if(fh->shell->hasMeasurement)
+            {
+                measurementGPS(0) = fh->shell->camToWorld_measured.translation()(0);
+                measurementGPS(1) = fh->shell->camToWorld_measured.translation()(1);
+                measurementGPS(2) = fh->shell->camToWorld_measured.translation()(2);
+                kalmanFilter.updateGPS(measurementGPS); // this is the GPS correction step
+
+            }
+
+            fh->shell->camToWorld_predicted = kalmanFilter.getStateAsSE3();
+            fh->shell->hasPrediction = true;
         }
+        // ------------END OF KALMAN FILTER CORRECTION STEP (GPS) ---------------------------
+
+
         
-        // Correction Step GPS:
-        if(fh->shell->hasMeasurement)
-        {
-            Eigen::Vector3f measurementGPS = Eigen::Vector3f::Zero();
-            measurementGPS(0) = fh->shell->camToWorld_measured.translation()(0);
-            measurementGPS(1) = fh->shell->camToWorld_measured.translation()(1);
-            measurementGPS(2) = fh->shell->camToWorld_measured.translation()(2);
-            kalmanFilter.updateGPS(measurementGPS); // this is the GPS correction step
-            
-        }
-        
-        
-        fh->shell->camToWorld_predicted = kalmanFilter.getStateAsSE3();
-        fh->shell->hasPrediction = true;
         
         // *******************************
         // Retrieve geodetic (lat, lon, alt) position from prediction
         //********************************
+
         try
         {
-            
-            double latitude = 0.0;
-            double longitude = 0.0;
-            double altitude = 0.0;
-            double accuracy = 0.0;
-            double bearing = 0.0;
-            double speed = 0.0;
-            int satellites = 0.0;
-            unsigned long timestamp = (unsigned long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if(fh->shell->hasPrediction && kalmanFilter.isInitialized())
+            {
+                double latitude = 0.0;
+                double longitude = 0.0;
+                double altitude = 0.0;
+                double accuracy = 0.0;
+                double bearing = 0.0;
+                double speed = 0.0;
+                int satellites = 0.0;
+                unsigned long timestamp = (unsigned long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-            Eigen::Vector3d ecef_filtered_position = fh->shell->camToWorld_predicted.translation();
-            Eigen::AngleAxis<double> fromDSO2ECEF(M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
-            ecef_filtered_position = fromDSO2ECEF.matrix() * ecef_filtered_position;
-                    
-            // Transform filtered pose back from ECEF to lat lon
-            kalmanFilter.ecef_to_geo(ecef_filtered_position(0),ecef_filtered_position(1),ecef_filtered_position(2), latitude, longitude, altitude);
-            latitude = (latitude)/(M_PI)*180.0;
-            longitude = (longitude)/(M_PI)*180.0;
-            std::cout << "Recovered geodetic: " << latitude << ", " << longitude << std::endl;
+                Eigen::Vector3d ecef_filtered_position = fh->shell->camToWorld_predicted.translation();
+                Eigen::AngleAxis<double> fromDSO2ECEF(M_PI_2, Eigen::Vector3d(1.0,0.0,0.0));
+                ecef_filtered_position = fromDSO2ECEF.matrix() * ecef_filtered_position;
 
-            if(setting_useHTTP)
-            {    
-                // POST filtered GPS to server
-                httpPostRequest->addFilteredGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
+                // Transform filtered pose back from ECEF to lat lon
+                kalmanFilter.ecef_to_geo(ecef_filtered_position(0),ecef_filtered_position(1),ecef_filtered_position(2), latitude, longitude, altitude);
+                latitude = (latitude)/(M_PI)*180.0;
+                longitude = (longitude)/(M_PI)*180.0;
+                std::cout << "ECEF: " << ecef_filtered_position(0) << ", " << ecef_filtered_position(1) << ", " << ecef_filtered_position(2) << std::endl;
+                std::cout << "Recovered geodetic: " << latitude << ", " << longitude << std::endl;
+
+                if(setting_useHTTP)
+                {
+                    // POST filtered GPS to server
+                    httpPostRequest->addFilteredGPS(timestamp, latitude, longitude, accuracy, bearing, speed, altitude, satellites);
+                }
             }
         }
         catch (const std::exception& ex)
         {
-            std::cerr << ex.what() << std::endl;
+            std::cerr << "CATCH at line 1093 in FullSystem::AddActiveFrame - " << ex.what() << std::endl;
         }
+
         // Update internal timestamp of the kalman filter to current one
-        kalmanFilter.setLastTimestampToCurrent();
-        
+        if(kalmanFilter.isInitialized() )
+        {
+            kalmanFilter.setLastTimestampToCurrent();
+        }
+        /*
+        */
 
         for(IOWrap::Output3DWrapper* ow : outputWrapper)
             ow->publishCamPose(fh->shell, &Hcalib);

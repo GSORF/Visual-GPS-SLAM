@@ -143,7 +143,7 @@ namespace dso
             // Complicated way to just get a string from boost...  
             std::string received;
             std::copy(recv_buffer_.begin(), recv_buffer_.begin()+bytes_transferred, std::back_inserter(received));
-            std::cout << "Received from UDP: " << received;
+            std::cout << "Received from UDP: " << received << std::endl;
             
             
             // Internal UDP Logic - determine what to do with the received datagram

@@ -21,6 +21,7 @@
 
 #include <chrono>
 #include <boost/date_time.hpp>
+#include <boost/thread.hpp>
 
 
 #ifndef HTTPPOSTREQUEST_H
@@ -51,7 +52,7 @@ public:
         this->protocol = protocol;
         this->timestamp = 0;
         this->active = true;
-        
+
         // Create new project:
         double now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->projectName = std::to_string((unsigned long)now);
@@ -75,10 +76,15 @@ public:
         
         //message = "action=addproject&projectname=1524088429&projectdescription=HelloWorld";
         
-        //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
+        std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
-        // HTTP POST request:
+        // Create TCP Stream Object
+        boost::asio::ip::tcp::iostream streamPOST;
+
+        // Connect to the server via HTTP port 80
         streamPOST.connect(this->host, this->protocol);
+
+        // Construct HTTP POST request:
         streamPOST << "POST /demo/insert.php HTTP/1.1\r\n";
         streamPOST << "Host: " << this->host << "\r\n";
         streamPOST << "Accept: */*\r\n";
@@ -92,7 +98,9 @@ public:
         streamPOST << message;
         streamPOST.flush();
         
-        //std::cout << streamPOST.rdbuf() << std::endl;
+        std::cout << streamPOST.rdbuf() << std::endl;
+
+
         
     }
     
@@ -107,7 +115,7 @@ public:
         message += "&projectname=" + this->projectName;
         message += "&projectdescription=" + urlencode(this->projectDescription);
         
-        sendPOST(message);
+        boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
     
     inline void addFilteredGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
@@ -127,7 +135,7 @@ public:
         message += "&gpsfilteredaltitude=" + std::to_string(altitude);
         message += "&gpsfilteredsatellites=" + std::to_string(satellites);
         
-        sendPOST(message);
+        boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
     
     inline void addRawGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
@@ -147,7 +155,7 @@ public:
         message += "&gpsrawaltitude=" + std::to_string(altitude);
         message += "&gpsrawsatellites=" + std::to_string(satellites);
         
-        sendPOST(message);
+        boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
     
     inline void addCameraPose(unsigned long timestamp, Eigen::Vector3d translation, Eigen::Quaterniond quaternion)
@@ -168,7 +176,7 @@ public:
         message += "&poseqz=" + std::to_string(quaternion.z());
         
         
-        sendPOST(message);
+        boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
     
     inline void addPointCloud(std::string pointString)
@@ -181,7 +189,9 @@ public:
         message += "&projectname=" + this->projectName;
         message += "&pointstring=" + pointString;
         
-        sendPOST(message);
+        // TODO: Add back (currently commented due to performance reasons)
+        //boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
+
     }
     
     inline void addEverything(std::string name,
@@ -240,7 +250,7 @@ public:
         
         message += "&pointstring=" + pointString;
         
-        sendPOST(message);
+        boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
     
     /*
@@ -309,9 +319,7 @@ Mozilla/5.0 (X11; Ubuntu; Linu…) Gecko/20100101 Firefox/59.0
     
     
 protected:
-    // HTTP POST Request
-    boost::asio::ip::tcp::iostream streamPOST;
-    
+
     std::string host;
     std::string protocol;
     bool active; // Determines if POST requests are being sent
