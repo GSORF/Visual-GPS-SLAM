@@ -76,7 +76,7 @@ public:
         
         //message = "action=addproject&projectname=1524088429&projectdescription=HelloWorld";
         
-        std::cout << "SENT POST REQUEST with message: " << message << std::endl;
+        //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
         // Create TCP Stream Object
         boost::asio::ip::tcp::iostream streamPOST;
@@ -98,7 +98,7 @@ public:
         streamPOST << message;
         streamPOST.flush();
         
-        std::cout << streamPOST.rdbuf() << std::endl;
+        //std::cout << streamPOST.rdbuf() << std::endl;
 
 
         
@@ -121,7 +121,7 @@ public:
     inline void addFilteredGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addfilteredgps&projectname=" + txtProjectName.value + "&gpsfilteredtimestamp=" + txtFilteredGPSTimestamp.value + "&gpsfilteredlatitude=" + txtFilteredGPSLatitude.value + "&gpsfilteredlongitude=" + txtFilteredGPSLongitude.value + "&gpsfilteredaccuracy=" + txtFilteredGPSAccuracy.value + "&gpsfilteredbearing=" + txtFilteredGPSBearing.value + "&gpsfilteredspeed=" + txtFilteredGPSSpeed.value + "&gpsfilteredaltitude=" + txtFilteredGPSAltitude.value + "&gpsfilteredsatellites=" + txtFilteredGPSSatellites.value;"
-        
+
         std::string message;
         
         message += "action=addfilteredgps";
@@ -134,6 +134,7 @@ public:
         message += "&gpsfilteredspeed=" + std::to_string(speed);
         message += "&gpsfilteredaltitude=" + std::to_string(altitude);
         message += "&gpsfilteredsatellites=" + std::to_string(satellites);
+        //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
         boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
@@ -141,7 +142,7 @@ public:
     inline void addRawGPS(unsigned long timestamp, double latitude, double longitude, double accuracy, double bearing, double speed, double altitude, int satellites)
     {
         // Example: "action=addrawgps&projectname=" + txtProjectName.value + "&gpsrawtimestamp=" + txtRawGPSTimestamp.value + "&gpsrawlatitude=" + txtRawGPSLatitude.value + "&gpsrawlongitude=" + txtRawGPSLongitude.value + "&gpsrawaccuracy=" + txtRawGPSAccuracy.value + "&gpsrawbearing=" + txtRawGPSBearing.value + "&gpsrawspeed=" + txtRawGPSSpeed.value + "&gpsrawaltitude=" + txtRawGPSAltitude.value + "&gpsrawsatellites=" + txtRawGPSSatellites.value"
-        
+
         std::string message;
         
         message += "action=addrawgps";
@@ -154,6 +155,7 @@ public:
         message += "&gpsrawspeed=" + std::to_string(speed);
         message += "&gpsrawaltitude=" + std::to_string(altitude);
         message += "&gpsrawsatellites=" + std::to_string(satellites);
+        //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
         boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }
@@ -174,7 +176,6 @@ public:
         message += "&poseqx=" + std::to_string(quaternion.x());
         message += "&poseqy=" + std::to_string(quaternion.y());
         message += "&poseqz=" + std::to_string(quaternion.z());
-        
         
         boost::thread httpThread(&HTTPPOSTRequest::sendPOST, this, message);
     }

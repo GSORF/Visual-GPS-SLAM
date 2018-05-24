@@ -81,6 +81,7 @@ namespace dso
             
             double timestampCurrent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             
+		std::cout << "bool getMeasurement(double &latitude, double &longitude, double &altitude, double &accuracy)" << std::endl;
             // TODO: Check for age of measurement (in milliseconds). Set to 2 Seconds for now (too long still?)
             if( fabs(timestampLastUpdate_ - timestampCurrent) < 2000.0 )
             {
@@ -92,6 +93,8 @@ namespace dso
                 accuracy = this->accuracy_;
                 
                 success = true;
+
+		std::cout << "Got new GPS measurement" << std::endl;
             }
             
             // Unlock mutex to let go of thread
@@ -173,10 +176,13 @@ namespace dso
                 std::vector<std::string> string_parts;
                 boost::split(string_parts, received, boost::is_any_of("#"));
 
-                if(string_parts.size() == 4)
+                if(string_parts.size() >= 4)
                 {
                     // There are four parts: "GPS", "latitude", "longitude", "accuracy"
                     // E.g.: GPS#49.4144637#11.1298899#20.903
+
+		    //EDIT May, 24th, 2018: Smartphone now publishes more data. Current UDP Packet contains:
+		    //"GPS", "latitude", "longitude", "accuracy", "bearing", "speed", "altitude", "provider (gps/wifi/network)"
                     
                     // Update timestamp for last update
                     this->timestampLastUpdate_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -185,6 +191,8 @@ namespace dso
                     this->longitude_ = std::stod(string_parts.at(2));
                     this->altitude_ = 0;
                     this->accuracy_ = std::stod(string_parts.at(3));
+
+//std::cout << "Received in handleReceive(): lat=" << latitude<< " lon=" << longitude << " acc=" << accuracy << std::endl;
                     
                     this->hasMeasurement = true;
                 }
@@ -192,17 +200,6 @@ namespace dso
                 // Unlock mutex to let go of thread
                 mtx_.unlock();
                 
-                /*
-                 Example Code for sending a message (this is not used)
-                
-                boost::shared_ptr<std::string> message(
-                new std::string(make_daytime_string()));
-                
-                socket_.async_send_to(boost::asio::buffer(*message), remote_endpoint_,
-                boost::bind(&UDPServer::handle_send, this, message,
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
-                */
             }
             
             
