@@ -137,7 +137,18 @@ void parseArgument(char* arg)
 		printf("ROS Topic set as %s!\n", rosTopic.c_str());
 		return;
 	}
-        
+        /*
+         Add feature to init kalmanFilter with GPS or Pose
+         */
+	if(1==sscanf(arg, "initKalmanFilter=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_initKalmanFilter = true;
+		printf("Will initialize KalmanFilter from poses or gps!\n");
+            }
+            return;
+        }
         /*
          Add feature to read in GPS measurements via UDP
          */
