@@ -52,6 +52,7 @@ extern int pyrLevelsUsed;
 
 // Added by ADAM:
 extern bool setting_useCameraPoses;
+extern bool setting_initKalmanFilter;
 extern bool setting_useHTTP;
 extern bool setting_useUDP;
 

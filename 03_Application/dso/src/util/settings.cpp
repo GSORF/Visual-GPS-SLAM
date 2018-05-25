@@ -33,6 +33,7 @@ int pyrLevelsUsed = PYR_LEVELS;
 
 // Added by ADAM:
 bool setting_useCameraPoses = false;
+bool setting_initKalmanFilter = false;
 bool setting_useHTTP = false;
 bool setting_useUDP = false;
 

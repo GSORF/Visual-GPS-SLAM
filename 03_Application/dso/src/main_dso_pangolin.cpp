@@ -364,6 +364,18 @@ void parseArgument(char* arg)
             setting_useCameraPoses = true;
             return;
 	}
+	/*
+         Add feature to init kalmanFilter with GPS or Pose
+         */
+	if(1==sscanf(arg, "initKalmanFilter=%d", &option))
+        {
+            if(option==1)
+            {
+                setting_initKalmanFilter = true;
+		printf("Will initialize KalmanFilter from poses or gps!\n");
+            }
+            return;
+        }
         
         /*
          Add feature to read in GPS measurements via UDP

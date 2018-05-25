@@ -863,9 +863,17 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 
                 if(!kalmanFilter.isInitialized())
                 {
-                    Eigen::Vector3d position = shell->camToWorld_measured.translation();
-                    kalmanFilter.init(position(0),position(1),position(2),
-                              1.0,1.0,1.0);
+			Eigen::Vector3d position = shell->camToWorld_measured.translation();
+			if(setting_initKalmanFilter)
+			{
+	                    kalmanFilter.init(position(0),position(1),position(2), 1.0,1.0,1.0);
+
+			}
+			else
+			{
+			    kalmanFilter.init(0,0,0, 1.0,1.0,1.0);
+			}
+
                 }
                 
 
@@ -913,9 +921,16 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 
                 if(!kalmanFilter.isInitialized())
                 {
-                    kalmanFilter.init(ecef_position(0),ecef_position(1),ecef_position(2),
-                              1.0,1.0,1.0);
+			if(setting_initKalmanFilter)
+			{
+		            kalmanFilter.init(ecef_position(0),ecef_position(1),ecef_position(2), 1.0,1.0,1.0);
+			}
+			else
+			{
+			    kalmanFilter.init(0,0,0, 1.0,1.0,1.0);
+			}
                 }
+
             }
         }
         
