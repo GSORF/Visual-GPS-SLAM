@@ -42,8 +42,8 @@ namespace dso
                   float initvx = 0.0, float initvy = 0.0, float initvz = 0.0,
                   float sigmax = 10.0, float sigmay = 10.0, float sigmaz = 10.0,
                   float sigmavx = 1.0, float sigmavy = 1.0, float sigmavz = 1.0,
-                  float qx = 0.0003, float qy = 0.0003, float qz = 0.0003,
-                  float qvx = 0.0001, float qvy = 0.0001, float qvz = 0.0001, 
+                  float qx = 0.10, float qy = 0.10, float qz = 0.10,
+                  float qvx = 0.01, float qvy = 0.01, float qvz = 0.01, 
                   float rx = 10.0f, float ry = 10.0f, float rz = 10.0f,
                   float rvx = 1.0f, float rvy = 1.0f, float rvz = 1.0f);
 

@@ -194,7 +194,7 @@ public:
                 
                 if(pointCloudString != "")
                 {
-                    httpPOSTRequest.addPointCloud(pointCloudString);
+                    //httpPOSTRequest.addPointCloud(pointCloudString);
                 }
                 
             }
@@ -229,7 +229,7 @@ public:
                     << quaternion.z() << "\n";
             posesCSV.flush(); //Flush because Destructor is never called...
 
-            std::cout << "Publishing new camera pose via HTTP" << std::endl;
+            //std::cout << "Publishing new camera pose via HTTP" << std::endl;
             httpPOSTRequest.addCameraPose(timestamp, matrix.translation(), matrix.unit_quaternion() );
             
             /*

@@ -32,8 +32,6 @@ using boost::asio::ip::udp;
 
 namespace dso
 {
-    
-    
     class UDPServer {
     public:
         
@@ -81,21 +79,30 @@ namespace dso
             
             double timestampCurrent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             
-		std::cout << "bool getMeasurement(double &latitude, double &longitude, double &altitude, double &accuracy)" << std::endl;
-            // TODO: Check for age of measurement (in milliseconds). Set to 2 Seconds for now (too long still?)
-            if( fabs(timestampLastUpdate_ - timestampCurrent) < 2000.0 )
-            {
-                // If the measurement is not too old, return it back
+	    std::cout << "bool getMeasurement(double &latitude, double &longitude, double &altitude, double &accuracy)" << std::endl;
+            
+	    // Only return a measurement that has a better accuracy than 10 meters
+	    // TODO: Use statistical methods like e.g. Z-Score to perform proper outlier detection
+	    if( fabs( this->accuracy_ ) < 10.0 )
+	    {
+		    // Check for age of measurement (in milliseconds). Set to 2 Seconds for now
+		    if( fabs(timestampLastUpdate_ - timestampCurrent) < 2000.0 )
+		    {
+		        // If the measurement is not too old, return it back
 
-                latitude = this->latitude_;
-                longitude = this->longitude_;
-                altitude = this->altitude_;
-                accuracy = this->accuracy_;
-                
-                success = true;
+		        latitude = this->latitude_;
+		        longitude = this->longitude_;
+		        altitude = this->altitude_;
+		        accuracy = this->accuracy_;
+		        
+		        success = true;
 
-		std::cout << "Got new GPS measurement" << std::endl;
-            }
+			std::cout << "Got new GPS measurement" << std::endl;
+			
+			// Reset hasMeasurement flag to avoid same measurements are being taken multiple times
+			this->hasMeasurement = false;
+		    }
+	    }
             
             // Unlock mutex to let go of thread
             mtx_.unlock();

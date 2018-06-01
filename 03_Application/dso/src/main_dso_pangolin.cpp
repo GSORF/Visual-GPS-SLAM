@@ -627,7 +627,7 @@ int main( int argc, char** argv )
             
             // Poll for new GPS poses:
             //io_service.poll();
-        
+        	
             if(!skipFrame) fullSystem->addActiveFrame(img, i);
 
             // Free memory reserved for a pointer to the image object

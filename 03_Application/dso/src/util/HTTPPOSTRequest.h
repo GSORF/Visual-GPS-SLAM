@@ -78,28 +78,37 @@ public:
         
         //std::cout << "SENT POST REQUEST with message: " << message << std::endl;
         
-        // Create TCP Stream Object
-        boost::asio::ip::tcp::iostream streamPOST;
+	try
+	{
 
-        // Connect to the server via HTTP port 80
-        streamPOST.connect(this->host, this->protocol);
 
-        // Construct HTTP POST request:
-        streamPOST << "POST /demo/insert.php HTTP/1.1\r\n";
-        streamPOST << "Host: " << this->host << "\r\n";
-        streamPOST << "Accept: */*\r\n";
-        //streamPOST << "Accept-Encoding: gzip, deflate, br\r\n";
-        //streamPOST << "Accept-Language: en-US,en;q=0.5\r\n";
-        //streamPOST << "Connection: keep-alive\r\n\r\n";
-        streamPOST << "Connection: close\r\n";
-        streamPOST << "Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n";
-        streamPOST << "Content-Length: "<< message.length() << "\r\n";
-        streamPOST << "\r\n";
-        streamPOST << message;
-        streamPOST.flush();
-        
-        //std::cout << streamPOST.rdbuf() << std::endl;
+		// Create TCP Stream Object
+		boost::asio::ip::tcp::iostream streamPOST;
 
+		// Connect to the server via HTTP port 80
+		streamPOST.connect(this->host, this->protocol);
+
+		// Construct HTTP POST request:
+		streamPOST << "POST /demo/insert.php HTTP/1.1\r\n";
+		streamPOST << "Host: " << this->host << "\r\n";
+		streamPOST << "Accept: */*\r\n";
+		//streamPOST << "Accept-Encoding: gzip, deflate, br\r\n";
+		//streamPOST << "Accept-Language: en-US,en;q=0.5\r\n";
+		//streamPOST << "Connection: keep-alive\r\n\r\n";
+		streamPOST << "Connection: close\r\n";
+		streamPOST << "Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n";
+		streamPOST << "Content-Length: "<< message.length() << "\r\n";
+		streamPOST << "\r\n";
+		streamPOST << message;
+		streamPOST.flush();
+		
+		//std::cout << streamPOST.rdbuf() << std::endl;
+
+	}
+	catch (const std::exception& e)
+	{ // reference to the base of a polymorphic object
+     		std::cout << e.what(); // information from length_error printed
+	}
 
         
     }
