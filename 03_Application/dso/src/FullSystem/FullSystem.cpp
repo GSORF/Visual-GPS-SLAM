@@ -328,6 +328,9 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 
 
 		// get last delta-movement.
+		// ADAM Add your guess here (try removing all other guesses and use ground truth)
+		// First, transform from last frame using motion to get new guess last->camToWorld.inverse() * ground_truth
+
 		lastF_2_fh_tries.push_back(fh_2_slast.inverse() * lastF_2_slast);	// assume constant motion.
 		lastF_2_fh_tries.push_back(fh_2_slast.inverse() * fh_2_slast.inverse() * lastF_2_slast);	// assume double motion (frame skipped)
 		lastF_2_fh_tries.push_back(SE3::exp(fh_2_slast.log()*0.5).inverse() * lastF_2_slast); // assume half motion.

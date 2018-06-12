@@ -562,7 +562,10 @@ bool CoarseTracker::trackNewestCoarse(
 
 	for(int lvl=coarsestLvl; lvl>=0; lvl--)
 	{
-		Mat88 H; Vec8 b;
+		Mat88 H; Vec8 b;		
+		// TODO ADAM (Fusion): Store the last H matrix inv(H), Basevector LieAlgebra needs conversion to SE3 using exponential map = Covmatrix (6x6 upper left block)
+		// A^tA inc = -A^tb to get update for pose
+		// H = A^tA, inc is a lie-algebra update for the current pose estimate to get a better solution
 		float levelCutoffRepeat=1;
 		Vec6 resOld = calcRes(lvl, refToNew_current, aff_g2l_current, setting_coarseCutoffTH*levelCutoffRepeat);
 		while(resOld[5] > 0.6 && levelCutoffRepeat < 50)
