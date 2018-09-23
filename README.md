@@ -1,15 +1,17 @@
 # Visual-GPS-SLAM
-This is a repo for my master thesis research about the Fusion of Visual SLAM and GPS. It contains the research paper, code and other interesting data.
+This is a repo for my master thesis research about the Fusion of Visual SLAM and GPS. It contains the thesis paper, code and other interesting data.
 
-Note: This is work in progress. Please take a look at the website that accompanies this research at:
+Note: Publication will take longer due to conference submissions and deadlines. The website that accompanies this research can be found at:
 https://Master.Kalisz.co
 
-# Paper
-The paper will be written in LaTeX and added soon.
+# Master Thesis
+The Master Thesis was written in LaTeX and will be added once any conferences related to it will be over.
+
+# Conference Paper
+An additional conference paper was recently (21.09.2018) accepted and is scheduled to be published at the end of 2018.
 
 # Code
-
-Any code is being written in HTML5, Python and C++.
+Code was written in C++ (main realtime implementation), Python (simulation), HTML5 (sensor recorder, track viewer, synchronization and live-demo tools).
 
 ## Dependencies
 ### Direct Sparse Odometry (DSO)
