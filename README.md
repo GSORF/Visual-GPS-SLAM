@@ -1,11 +1,18 @@
 # Visual-GPS-SLAM
 This is a repo for my master thesis research about the Fusion of Visual SLAM and GPS. It contains the thesis paper, code and other interesting data.
 
-Note: Publication will take longer due to conference submissions and deadlines. The website that accompanies this research can be found at:
+The website that accompanies this research can be found at:
 https://Master.Kalisz.co
 
 # Master Thesis
-The Master Thesis was written in LaTeX and will be added once any conferences related to it will be over.
+The Master Thesis was written in LaTeX and is published here:
+http://master.kalisz.co/MasterThesis_AdamKalisz_Online.pdf
+
+# Video
+This video shows first tests with the setup running in a car:
+[![Watch the video]()](https://master.kalisz.co/video/Robolab_Demo_Kalisz_MusicSTEEP.mp4)
+
+
 
 # Publications
 Two papers have been accepted and published related to this master thesis:
