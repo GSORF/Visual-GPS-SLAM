@@ -7,11 +7,16 @@ https://Master.Kalisz.co
 # Master Thesis
 The Master Thesis was written in LaTeX and will be added once any conferences related to it will be over.
 
-# Conference Paper
-An additional conference paper was recently (21.09.2018) accepted and is scheduled to be published at the end of 2018.
+# Publications
+Two papers have been accepted and published related to this master thesis:
+
+1. VISAPP 2019: "B-SLAM-SIM: A novel approach to evaluate the fusion of Visual SLAM and GPS by example of Direct Sparse Odometry and Blender" by Adam Kalisz, Florian Particke, Dominik Penk, Markus Hiller and Jörn Thielecke. Link (VISAPP technical program): http://insticc.org/node/TechnicalProgram/visigrapp/presentationDetails/73753
+2. DICTA 2018: "Systematic Analysis of Direct Sparse Odometry" by Florian Particke, Adam Kalisz, Christian Hofmann, Markus Hiller, Henrik Bey and Jörn Thielecke. Link (IEEEXPLORE): https://ieeexplore.ieee.org/document/8615807
+
+
 
 # Code
-Code was written in C++ (main realtime implementation), Python (simulation), HTML5 (sensor recorder, track viewer, synchronization and live-demo tools).
+Code was written in C++ (main realtime implementation), Python (Blender Addon "B-SLAM-SIM" and Sensor data fusion in Blender), HTML5 (sensor recorder, track viewer, synchronization and live-demo tools).
 
 ## Dependencies
 ### Direct Sparse Odometry (DSO)
