@@ -37,11 +37,17 @@ The B-SLAM-SIM Addon helps you to generate datasets from within Blender for your
 
 The usual way to install addons in Blender is to choose the addon file from the user preferences. For a quicker way you may want to switch to the "Scripting" workspace in Blender 2.80, create a new text block in the text editor, paste in the content of the file 02_Utilities/BlenderAddon/addon_vslam_groundtruth_Blender280.py and click on "Run Script". You should then see a new Panel available in Blender in the Properties Window under "Scene" Settings.
 
+<img src="01_Screenshots/BlenderAddon_BSLAMSIM_BlenderUI.png" width=100% />
+
 ### B-SLAM-SIM User Interface
 
 The user interface is shown in the following two figures - this is the upper part:
 
+<img src="01_Screenshots/BlenderAddon_BSLAMSIM_Part1.jpg" width=100% />
+
 and this is the lower part:
+
+<img src="01_Screenshots/BlenderAddon_BSLAMSIM_Part2.jpg" width=100% />
 
 For a sample use case let us consider that we need to export the animated camera pose from Blender into a text file for general use. Due to the goal of this work to further process this information in the Direct Sparse Odometry (DSO) algorithm, the addon automatically transforms camera poses from Blenders' coordinate system to the coordinate system of the DSO. In case you need the camera pose in Blenders's coordinate system, the addon will create that for you as well. In order to export your camera, please follow these steps:
 1. Select where you want to export the data by specifying the "Output directory:" in the addon
