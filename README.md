@@ -81,6 +81,14 @@ And the noisy measurements might look similar like this:
 ...
 ```
 
+The data is structured as follows:
+```
+Timestamp (optional, in milliseconds),Translation (x), Translation (y), Translation (z), Orientation Quaternion (w), Orientation Quaternion (x), Orientation Quaternion (y), Orientation Quaternion (z)
+...
+```
+
+
+
 There are many more features in the addon that may help you generating datasets quickly. If you need assistance, please feel free to write me an issue on GitHub and I will explain the process in more detail.
 
 
