@@ -104,6 +104,28 @@ python BlenderPlot.py
 ```
 If you want to test your own sensor data fusion, you can use the Blender 2.79 (no 2.8 at the moment) "01_LinearKalmanFilter_allEvaluations.blend" file in "02_Utilities/FusionLinearKalmanFilter" and take a look at how sensor data fusion is done there. Please, if you have any questions related to that, feel free to contact me or just open an issue. I will respond as soon as possible! I have planned to create a video tutorial on how to use it, but didn't manage to finish it yet. This is still on my TODO list and will most likely make everything a lot clearer.
 
+## How to use the modified Direct Sparse Odometry (DSO) Code?
+
+Please follow the [![Instructions on the DSO Github Page]()](https://github.com/JakobEngel/dso#2-installation). As of October, 06th, 2019 I had no issues to compile the code on a Jetson Nano embedded board. However, during my Master's thesis I had quite a few annoying compiler crashes (VTable Bugs with Gnu GCC):
+<img src="http://master.kalisz.co/presentation/images/02_16112017/DSO_CompilerBug_01.png" width=100% />
+
+
+At that time, I had fixed them with generating additional diagnosis data, which you can see in my bug report here: [![GNU GCC Bugzilla]()](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82985). Maybe it will help you the same way as it did for me.
+
+Once you have DSO compiled, you may want to copy my code (from "03_Application/dso") over the original one to get my modifications to the viewer (I am drawing the world grid, world axes and camera axes to help with coordinate system transformations), the DSO Code (I can import camera poses from Blender - however, fusing ground truth data did not work as expected still - and I export the camera poses in a wrapper. Furthermore I upload the cameraposes via HTTP via a POST request)
+
+## How to use the modified Robot Operating System (ROS) DSO Wrapper?
+
+Once again, please follow the [![Instructions on the DSO ROS Wrapper Github page]()](https://github.com/JakobEngel/dso_ros) but be sure to checkout the "catkin" branch instead of the "master" branch using:
+```bash
+git checkout catkin
+```
+After this, compile using the following command in your catkin workspace (typically "~/catkin_ws": 
+```bash
+catkin_make
+```
+You may now copy my code (from "03_Application/dso_ros") over the original code in order to have my working code to operate the real-time DSO via ROS using a Stereolabs ZED Camera with their official ROS Wrapper (see [![ZED ROS Wrapper Github page]()](https://github.com/stereolabs/zed-ros-wrapper)).
+
 ## Why GPLv3 license?
 I have modified code that is licensed under GNU GPL Version 3 (see below), so I have to make my changes available under the same license. I can provide a different license for my custom Blender Addon scripts if you prefer that. Just feel free to message me.
 
