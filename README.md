@@ -15,12 +15,11 @@ This video shows first tests with the setup running in a car:
 
 
 # Publications
-Two papers have been accepted and published related to this master thesis:
+Three papers have been accepted and published related to this master thesis:
 
-1. VISAPP 2019: "B-SLAM-SIM: A novel approach to evaluate the fusion of Visual SLAM and GPS by example of Direct Sparse Odometry and Blender" by Adam Kalisz, Florian Particke, Dominik Penk, Markus Hiller and Jörn Thielecke. Link (VISAPP technical program): http://insticc.org/node/TechnicalProgram/visigrapp/presentationDetails/73753
-2. DICTA 2018: "Systematic Analysis of Direct Sparse Odometry" by Florian Particke, Adam Kalisz, Christian Hofmann, Markus Hiller, Henrik Bey and Jörn Thielecke. Link (IEEEXPLORE): https://ieeexplore.ieee.org/document/8615807
-
-A third publication was accepted at VISAPP 2020 and will be published as soon as possible after the conference has taken place.
+1. VISAPP 2020: "Systematic Comparison of ORB-SLAM2 and LDSO based on Varying Simulated Environmental Factors" by Adam Kalisz, Tong Ling, Florian Particke, Christian Hofmann, Jörn Thielecke. Link (VISAPP technical program): https://www.insticc.org/node/TechnicalProgram/visigrapp/2020/presentationDetails/88794
+2. VISAPP 2019: "B-SLAM-SIM: A novel approach to evaluate the fusion of Visual SLAM and GPS by example of Direct Sparse Odometry and Blender" by Adam Kalisz, Florian Particke, Dominik Penk, Markus Hiller and Jörn Thielecke. Link (VISAPP technical program): http://insticc.org/node/TechnicalProgram/visigrapp/presentationDetails/73753
+3. DICTA 2018: "Systematic Analysis of Direct Sparse Odometry" by Florian Particke, Adam Kalisz, Christian Hofmann, Markus Hiller, Henrik Bey and Jörn Thielecke. Link (IEEEXPLORE): https://ieeexplore.ieee.org/document/8615807
 
 # Code
 Code was written in C++ (main realtime implementation), Python (Blender Addon "B-SLAM-SIM" and Sensor data fusion in Blender), HTML5 (sensor recorder, track viewer, synchronization and live-demo tools).
@@ -29,6 +28,17 @@ This repository provides two tools that assist you evaluating your sensor data f
 Firstly, the data generation can be performed using the "B-SLAM-SIM" Addon (02_Utilities/BlenderAddon/addon_vslam_groundtruth_Blender2xx.py) in Blender.
 Secondly, the generated data can be fused via the Linear Kalman Filter (02_Utilities/FusionLinearKalmanFilter/01_LinearKalmanFilter_allEvaluations.py) in Blender.
 
+## Modifications to the original Code base of Direct Sparse Odometry (DSO)
+
+This project heavily relies on using the Direct Sparse Odometry implementation by Engel et. al. (2016) (see Dependencies below). My project is not about the DSO, it is only used as an example for a VSLAM sensor to be used in a data fusion approach. Please note, that any suggested improvements to their codebase, will not be incoorporated into the original project, neither will they into my modifications. These are roughly my modifications to the original DSO code base:
+* Exported the estimated trajectory in the output wrapper as csv files (see here: https://github.com/GSORF/Visual-GPS-SLAM/blob/master/03_Application/dso/src/IOWrapper/OutputWrapper/SampleOutputWrapper.h#L230)
+* Imported camera poses from Blender (see here: https://github.com/GSORF/Visual-GPS-SLAM/blob/master/03_Application/dso/src/util/DatasetReader.h#L368)
+* Tried to use the ground truth generated using Blender instead of the optimized camera poses: Did not work and I have no idea why! (see here: https://github.com/GSORF/Visual-GPS-SLAM/blob/master/03_Application/dso/src/FullSystem/FullSystem.cpp#L863)
+* Upload of estimated trajectory and point cloud via a custom REST API to my webserver in real-time (see here: https://github.com/GSORF/Visual-GPS-SLAM/blob/master/03_Application/dso/src/IOWrapper/OutputWrapper/SampleOutputWrapper.h#L233)
+* Simple implementation of a linear Kalman Filter for real-time sensor data fusion (see here: https://github.com/GSORF/Visual-GPS-SLAM/blob/master/03_Application/dso/src/FullSystem/FullSystem.cpp#L867)
+* Drawing of (local) coordinate systems and world grid for better orientation as well as additional debug visualizations of the DSO+GPS-fused camera trajectory in the 3D Viewer Pangolin (see here: https://github.com/GSORF/Visual-GPS-SLAM/commit/566b38cb8a91d1724d407679f4b43fd47145ddbc#diff-8d512a7efc9da2929b5131d4209f19a6)
+
+It turned out to be very hard for me to satisfactorily modify the almost 20.000 lines of code of the DSO to even accomplish something as easy as just replacing the optimization procedure with ideal camera poses from the synthetic Blender datasets. Even after two years (today is the 24th April 2020) there is no suggestion on how to do that on my StackOverflow question (see here: https://robotics.stackexchange.com/questions/15456/how-to-properly-initialize-every-new-pose-in-a-visual-slam-algorithm-namely-dso). I therefore suppose that this is not trivial (for non-DSO authors at least...) and thus decided to not do the fusion online while the DSO is running, but rather as a post-processing approach in Blender, which I consider my main contribution on this topic as explained below.
 
 ## How to use the B-SLAM-SIM Blender Addon
 The B-SLAM-SIM Addon helps you to generate datasets from within Blender for your evaluations. There is one version for the old Blender version 2.79 (02_Utilities/BlenderAddon/addon_vslam_groundtruth_Blender279.py) and the recent Blender version 2.80 (02_Utilities/BlenderAddon/addon_vslam_groundtruth_Blender280.py). The old Blenderversion will not be developed further, therefore please use the recent Blender version 2.80 addon if possible.
