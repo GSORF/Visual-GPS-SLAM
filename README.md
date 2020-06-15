@@ -101,6 +101,9 @@ Timestamp (optional, in milliseconds),Translation (x), Translation (y), Translat
 
 There are many more features in the addon that may help you generating datasets quickly. If you need assistance, please feel free to write me an issue on GitHub and I will explain the process in more detail.
 
+#### Known issues:
+
+* Be aware that if you have a camera object animated using "Follow Path" and "Track To" constraints, the newly created camera after clicking the "Export camera poses and project files" button will also have these contraints. This may destroy the visualization within Blender, the exported files however will be correct. Thanks to D. Wang for finding this bug during his Master Thesis under my supervision (15.06.2020). This is to be fixed still (TODO).
 
 ## How to recreate the Plots from the thesis
 In order to recreate the plots from the thesis and papers you can use the attached python script. First, make sure you are using Python3 and have "matplotlib" installed. For the latter you can usually do:
