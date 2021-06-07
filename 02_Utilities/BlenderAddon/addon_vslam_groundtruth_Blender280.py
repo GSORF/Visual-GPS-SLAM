@@ -285,10 +285,10 @@ class VSLAMExportCamera(Operator):
             if(scene.vslam_bool_export_noisy):
                 if(scene.vslam_bool_export_timestamp):
                     FileNoisyCameraDSO.write("%d,%f,%f,%f,%f,%f,%f,%f\n" % (timestamp, dso_trans.x, dso_trans.y, dso_trans.z, dso_quat.w, dso_quat.x, dso_quat.y, dso_quat.z))
-                    FileNoisyCameraBlender.write("%d,%f,%f,%f,%f,%f,%f,%f\n" % (timestamp, dso_trans.x, dso_trans.y, dso_trans.z, dso_quat.w, dso_quat.x, dso_quat.y, dso_quat.z))
+                    FileNoisyCameraBlender.write("%d,%f,%f,%f,%f,%f,%f,%f\n" % (timestamp, translation.x, translation.y, translation.z, orientation.w, orientation.x, orientation.y, orientation.z))
                 else:
                     FileNoisyCameraDSO.write("%f,%f,%f,%f,%f,%f,%f\n" % (dso_trans.x, dso_trans.y, dso_trans.z, dso_quat.w, dso_quat.x, dso_quat.y, dso_quat.z))
-                    FileNoisyCameraBlender.write("%f,%f,%f,%f,%f,%f,%f\n" % (dso_trans.x, dso_trans.y, dso_trans.z, dso_quat.w, dso_quat.x, dso_quat.y, dso_quat.z))
+                    FileNoisyCameraBlender.write("%f,%f,%f,%f,%f,%f,%f\n" % (translation.x, translation.y, translation.z, orientation.w, orientation.x, orientation.y, orientation.z))
             
             altered_camera.location = translation
             altered_camera.rotation_euler = orientation.to_euler()
@@ -320,14 +320,44 @@ class VSLAMExportCamera(Operator):
             image_height = scene.render.resolution_y * (scene.render.resolution_percentage * 0.01)
             cropped_image_width = image_width * scene.vslam_dso_scale_factor
             cropped_image_height = image_height * scene.vslam_dso_scale_factor
+            
+            cam_data = scene.camera.data
+            focal_length = cam_data.lens # [mm]
+            sensor_width_mm = cam_data.sensor_width
+            sensor_height_mm = cam_data.sensor_height
+            
             # Calculate Focal length in Pixels:
             # focal length in pixels = (image width in pixels) * (focal length in mm) / (CCD width in mm)
             # Reference: http://phototour.cs.washington.edu/focal.html
-            fx = image_width * (1.0 * scene.camera.data.lens / scene.camera.data.sensor_width)
-            fy = image_height * (1.0 * scene.camera.data.lens / scene.camera.data.sensor_height)
+            fx = image_width * (1.0 * focal_length / sensor_width_mm)
+            fy = image_height * (1.0 * focal_length / sensor_height_mm)
             cx = image_width / 2
             cy = image_height / 2
             
+            # Alternative way to get camera intrinsics based on a post by Daniel on SO
+            # Reference: https://blender.stackexchange.com/questions/38009/3x4-camera-matrix-from-blender-camera/120063#120063
+            sensor_size_in_mm = sensor_width_mm
+            if cam_data.sensor_fit == 'VERTICAL':
+                sensor_size_in_mm = sensor_height_mm
+            
+            sensor_fit = cam_data.sensor_fit
+            if sensor_fit == 'AUTO':
+                if (scene.render.pixel_aspect_x * image_width) >= (scene.render.pixel_aspect_y * image_height):
+                    sensor_fit = 'HORIZONTAL'
+                else:
+                    sensor_fit = 'VERTICAL'
+            
+            pixel_aspect_ratio = scene.render.pixel_aspect_y / scene.render.pixel_aspect_x
+            if sensor_fit == 'HORIZONTAL':
+                view_fac_in_px = image_width
+            else:
+                view_fac_in_px = pixel_aspect_ratio * image_height
+            pixel_size_mm_per_px = (sensor_size_in_mm / focal_length) / view_fac_in_px
+            fx = 1.0 / pixel_size_mm_per_px
+            fy = (1.0 / pixel_size_mm_per_px) / pixel_aspect_ratio
+            cx = (image_width - 1) / 2.0 - cam_data.shift_x * view_fac_in_px
+            cy = (image_height - 1) / 2.0 + (cam_data.shift_y * view_fac_in_px) / pixel_aspect_ratio
+                        
             dso_calib_file = "camera_" + camera.name + ".txt"
             dso_image_folder = context.scene.vslam_camera + "/" + context.scene.vslam_camera + "_*"
             filepath_dso_calib = scene.vslam_output_directory + dso_calib_file
